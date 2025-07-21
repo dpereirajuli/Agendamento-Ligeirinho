@@ -41,16 +41,16 @@ export const Footer = () => {
           <div className="space-y-6">
             <div className="flex items-center space-x-3">
               <div className="p-1 rounded-full bg-amber-500">
-                <img src={logo} alt="Logo Barbearia Ligeirinho" className="h-10 w-10" />
+                <img src={logo} alt="Logo Barbearia" className="h-10 w-10" />
               </div>
-              <span className="text-2xl font-bold tracking-tight">Barbearia Ligeirinho</span>
+              <span className="text-2xl font-bold tracking-tight">Barbearia</span>
             </div>
             <p className="text-gray-300 leading-relaxed max-w-xs">
               Tradição e estilo em cada corte. Sua experiência única começa aqui.
             </p>
             <div className="flex space-x-4">
               <a 
-                href="https://www.instagram.com/ligeirinhosbarbershop" 
+                href="https://www.instagram.com/" 
                 className="p-2 rounded-full bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -58,7 +58,7 @@ export const Footer = () => {
                 <Instagram className="h-6 w-6 text-amber-500" />
               </a>
               <a 
-                href="https://wa.me/5511963477665" 
+                href="https://wa.me/" 
                 className="p-2 rounded-full bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -161,7 +161,7 @@ export const Footer = () => {
         <div className="mt-12 pt-8 border-t border-gray-700">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-gray-400 text-sm">
-              © 2025 Barbearia Ligeirinho | Desenvolvido por{' '}
+              © 2025 Barbearia | Desenvolvido por{' '}
               <a 
                 href="https://www.linkedin.com/in/juliaodaniel/" 
                 target="_blank" 

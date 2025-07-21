@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogAction, AlertDialogCancel, AlertDialogDescription } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
+import { Helmet } from 'react-helmet-async';
 
 const daysOfWeek = [
   { key: 'monday', label: 'Segunda-feira' },
@@ -231,217 +232,225 @@ export default function Barbers() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header isAuthenticated={true} userRole="admin" />
-      <div className="pt-24 pb-12">
-        <div className="container mx-auto px-4">
-          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Gerenciar Barbeiros</h1>
-              <p className="text-muted-foreground">
-                Cadastre, edite e remova barbeiros e seus horários de trabalho.
-              </p>
-            </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button className="btn-premium w-full sm:w-auto">Cadastrar Barbeiro</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl p-0 overflow-hidden sm:rounded-lg">
-                <div className="sticky top-0 left-0 right-0 z-20 bg-background px-4 sm:px-6 lg:px-8 pt-6 pb-2 border-b border-border/20 flex items-center justify-between">
-                  <DialogTitle className="text-lg sm:text-2xl">Novo Barbeiro</DialogTitle>
-                  <DialogClose asChild>
-                    <button aria-label="Fechar" className="rounded-full p-2 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
-                      <span className="sr-only">Fechar</span>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 6L14 14M14 6L6 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                  </DialogClose>
-                </div>
-                <form onSubmit={handleAddBarber} className="flex flex-col h-full">
-                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-4 pt-4" style={{ maxHeight: '70vh' }}>
-                    <div className="flex flex-col gap-4 mb-6">
-                      <Input
-                        placeholder="Nome completo do barbeiro"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        required
-                      />
-                      {createError && <div className="text-destructive">{createError}</div>}
-                    </div>
-                    <div className="p-4 bg-muted/30 rounded-lg mb-6">
-                      <h4 className="font-semibold mb-3">Horário Padrão</h4>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <Input type="time" value={createDefaultStart} onChange={e => setCreateDefaultStart(e.target.value)} className="w-24" />
-                          <span>até</span>
-                          <Input type="time" value={createDefaultEnd} onChange={e => setCreateDefaultEnd(e.target.value)} className="w-24" />
-                        </div>
-                        <Button size="sm" variant="outline" type="button" onClick={handleApplyCreateDefault} className="w-full sm:w-auto">Aplicar padrão</Button>
-                      </div>
-                      <h4 className="font-semibold mb-3">Dias para aplicar o padrão</h4>
-                      <div className="flex flex-wrap gap-4">
-                        {daysOfWeek.map(day => (
-                          <label key={day.key} className="flex items-center gap-1">
-                            <input
-                              type="checkbox"
-                              checked={createDefaultDays.includes(day.key)}
-                              onChange={e => setCreateDefaultDays(ds => e.target.checked ? [...ds, day.key] : ds.filter(d => d !== day.key))}
-                            />
-                            <span className="text-sm">{day.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold mb-3">Horários por Dia</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {createSchedules.map((sch, idx) => (
-                          <div key={sch.day_of_week} className="p-4 border rounded-lg flex flex-col gap-2 bg-background">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
-                                <Switch checked={sch.active} onCheckedChange={checked => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
-                              </div>
-                            </div>
-                            {sch.active && (
-                              <div className="flex items-center gap-2">
-                                <Input type="time" value={sch.start_time} onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} className="w-24" />
-                                <span>até</span>
-                                <Input type="time" value={sch.end_time} onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} className="w-24" />
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+    <>
+      <Helmet>
+        <title>Barbeiros Profissionais | Barbearia Premium São Paulo</title>
+        <meta name="description" content="Conheça a equipe de barbeiros profissionais da Barbearia Premium em São Paulo. Especialistas em corte masculino, barba e atendimento personalizado." />
+        <meta name="keywords" content="barbeiros, barbeiro profissional, equipe barbearia, corte masculino, barba, barbearia São Paulo" />
+        <link rel="canonical" href="https://www.seusite.com.br/barbeiros" />
+      </Helmet>
+      <div className="min-h-screen bg-background">
+        <Header isAuthenticated={true} userRole="admin" />
+        <div className="pt-24 pb-12">
+          <div className="container mx-auto px-4">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Gerenciar Barbeiros</h1>
+                <p className="text-muted-foreground">
+                  Cadastre, edite e remova barbeiros e seus horários de trabalho.
+                </p>
+              </div>
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button className="btn-premium w-full sm:w-auto">Cadastrar Barbeiro</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl p-0 overflow-hidden sm:rounded-lg">
+                  <div className="sticky top-0 left-0 right-0 z-20 bg-background px-4 sm:px-6 lg:px-8 pt-6 pb-2 border-b border-border/20 flex items-center justify-between">
+                    <DialogTitle className="text-lg sm:text-2xl">Novo Barbeiro</DialogTitle>
+                    <DialogClose asChild>
+                      <button aria-label="Fechar" className="rounded-full p-2 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+                        <span className="sr-only">Fechar</span>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6 6L14 14M14 6L6 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </DialogClose>
                   </div>
-                  <DialogFooter className="sticky bottom-0 left-0 right-0 bg-background px-4 sm:px-6 lg:px-8 py-4 border-t border-border/20 z-20 flex flex-col sm:flex-row sm:justify-end gap-2">
-                    <Button type="submit" disabled={saving} className="btn-premium w-full sm:w-auto">
-                      {saving ? 'Salvando...' : 'Salvar'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <div className="card-premium p-4 sm:p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Barbeiros Cadastrados</h2>
-            {loading ? (
-              <p>Carregando...</p>
-            ) : barbers.length === 0 ? (
-              <p className="text-muted-foreground">Nenhum barbeiro cadastrado.</p>
-            ) : (
-              <ul className="space-y-4">
-                {barbers.map((barber) => (
-                  <li key={barber.id} className="border border-border/20 rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <div>
-                      <h3 className="font-semibold mb-2">{barber.name}</h3>
-                      <p className="text-xs text-muted-foreground">Cadastrado em: {new Date(barber.created_at).toLocaleDateString()}</p>
+                  <form onSubmit={handleAddBarber} className="flex flex-col h-full">
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-4 pt-4" style={{ maxHeight: '70vh' }}>
+                      <div className="flex flex-col gap-4 mb-6">
+                        <Input
+                          placeholder="Nome completo do barbeiro"
+                          value={name}
+                          onChange={e => setName(e.target.value)}
+                          required
+                        />
+                        {createError && <div className="text-destructive">{createError}</div>}
+                      </div>
+                      <div className="p-4 bg-muted/30 rounded-lg mb-6">
+                        <h4 className="font-semibold mb-3">Horário Padrão</h4>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Input type="time" value={createDefaultStart} onChange={e => setCreateDefaultStart(e.target.value)} className="w-24" />
+                            <span>até</span>
+                            <Input type="time" value={createDefaultEnd} onChange={e => setCreateDefaultEnd(e.target.value)} className="w-24" />
+                          </div>
+                          <Button size="sm" variant="outline" type="button" onClick={handleApplyCreateDefault} className="w-full sm:w-auto">Aplicar padrão</Button>
+                        </div>
+                        <h4 className="font-semibold mb-3">Dias para aplicar o padrão</h4>
+                        <div className="flex flex-wrap gap-4">
+                          {daysOfWeek.map(day => (
+                            <label key={day.key} className="flex items-center gap-1">
+                              <input
+                                type="checkbox"
+                                checked={createDefaultDays.includes(day.key)}
+                                onChange={e => setCreateDefaultDays(ds => e.target.checked ? [...ds, day.key] : ds.filter(d => d !== day.key))}
+                              />
+                              <span className="text-sm">{day.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-3">Horários por Dia</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {createSchedules.map((sch, idx) => (
+                            <div key={sch.day_of_week} className="p-4 border rounded-lg flex flex-col gap-2 bg-background">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
+                                  <Switch checked={sch.active} onCheckedChange={checked => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
+                                </div>
+                              </div>
+                              {sch.active && (
+                                <div className="flex items-center gap-2">
+                                  <Input type="time" value={sch.start_time} onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} className="w-24" />
+                                  <span>até</span>
+                                  <Input type="time" value={sch.end_time} onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} className="w-24" />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Button variant="outline" onClick={() => openEditModal(barber)} className="flex-1 sm:flex-auto">Editar</Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm" className="flex-1 sm:flex-auto">Remover</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remover Barbeiro</AlertDialogTitle>
-                            <AlertDialogDescription>Tem certeza que deseja remover este barbeiro? Esta ação não pode ser desfeita.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleRemoveBarberFromList(barber)} className="btn-premium">
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+                    <DialogFooter className="sticky bottom-0 left-0 right-0 bg-background px-4 sm:px-6 lg:px-8 py-4 border-t border-border/20 z-20 flex flex-col sm:flex-row sm:justify-end gap-2">
+                      <Button type="submit" disabled={saving} className="btn-premium w-full sm:w-auto">
+                        {saving ? 'Salvando...' : 'Salvar'}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="card-premium p-4 sm:p-6 rounded-lg">
+              <h2 className="text-xl font-semibold mb-4">Barbeiros Cadastrados</h2>
+              {loading ? (
+                <p>Carregando...</p>
+              ) : barbers.length === 0 ? (
+                <p className="text-muted-foreground">Nenhum barbeiro cadastrado.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {barbers.map((barber) => (
+                    <li key={barber.id} className="border border-border/20 rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                      <div>
+                        <h3 className="font-semibold mb-2">{barber.name}</h3>
+                        <p className="text-xs text-muted-foreground">Cadastrado em: {new Date(barber.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Button variant="outline" onClick={() => openEditModal(barber)} className="flex-1 sm:flex-auto">Editar</Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" className="flex-1 sm:flex-auto">Remover</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover Barbeiro</AlertDialogTitle>
+                              <AlertDialogDescription>Tem certeza que deseja remover este barbeiro? Esta ação não pode ser desfeita.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleRemoveBarberFromList(barber)} className="btn-premium">
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden sm:rounded-lg">
-          <div className="sticky top-0 left-0 right-0 z-20 bg-background px-4 sm:px-6 lg:px-8 pt-6 pb-2 border-b border-border/20 flex items-center justify-between">
-            <DialogTitle className="text-lg sm:text-2xl">Editar Barbeiro</DialogTitle>
-            <DialogClose asChild>
-              <button aria-label="Fechar" className="rounded-full p-2 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
-                <span className="sr-only">Fechar</span>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 6L14 14M14 6L6 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </DialogClose>
-          </div>
-          <form onSubmit={handleSaveSchedules} className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-4 pt-4" style={{ maxHeight: '70vh' }}>
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Nome</label>
-                <Input value={editName} onChange={e => setEditName(e.target.value)} />
-              </div>
-              <div className="p-4 bg-muted/30 rounded-lg mb-6">
-                <h4 className="font-semibold mb-3">Horário Padrão</h4>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Input type="time" value={defaultStart} onChange={e => setDefaultStart(e.target.value)} className="w-24" />
-                    <span>até</span>
-                    <Input type="time" value={defaultEnd} onChange={e => setDefaultEnd(e.target.value)} className="w-24" />
-                  </div>
-                  <Button size="sm" variant="outline" type="button" onClick={handleApplyDefault} className="w-full sm:w-auto">Aplicar horário padrão</Button>
-                </div>
-                <h4 className="font-semibold mb-3">Dias para aplicar o padrão</h4>
-                <div className="flex flex-wrap gap-4">
-                  {daysOfWeek.map(day => (
-                    <label key={day.key} className="flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        checked={defaultDays.includes(day.key)}
-                        onChange={e => setDefaultDays(ds => e.target.checked ? [...ds, day.key] : ds.filter(d => d !== day.key))}
-                      />
-                      <span className="text-sm">{day.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3">Horários por Dia</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {editSchedules.map((sch, idx) => (
-                    <div key={sch.day_of_week} className="p-4 border rounded-lg flex flex-col gap-2 bg-background">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
-                          <Switch checked={sch.active} onCheckedChange={checked => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
-                        </div>
-                      </div>
-                      {sch.active && (
-                        <div className="flex items-center gap-2">
-                          <Input type="time" value={sch.start_time} onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} className="w-24" />
-                          <span>até</span>
-                          <Input type="time" value={sch.end_time} onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} className="w-24" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden sm:rounded-lg">
+            <div className="sticky top-0 left-0 right-0 z-20 bg-background px-4 sm:px-6 lg:px-8 pt-6 pb-2 border-b border-border/20 flex items-center justify-between">
+              <DialogTitle className="text-lg sm:text-2xl">Editar Barbeiro</DialogTitle>
+              <DialogClose asChild>
+                <button aria-label="Fechar" className="rounded-full p-2 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+                  <span className="sr-only">Fechar</span>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 6L14 14M14 6L6 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </DialogClose>
             </div>
-            <DialogFooter className="sticky bottom-0 left-0 right-0 bg-background px-4 sm:px-6 lg:px-8 py-4 border-t border-border/20 z-20 flex flex-col sm:flex-row sm:justify-end gap-2">
-              <Button type="submit" disabled={saving} className="btn-premium w-full sm:w-auto">
-                {saving ? 'Salvando...' : 'Salvar'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <form onSubmit={handleSaveSchedules} className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-4 pt-4" style={{ maxHeight: '70vh' }}>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">Nome</label>
+                  <Input value={editName} onChange={e => setEditName(e.target.value)} />
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg mb-6">
+                  <h4 className="font-semibold mb-3">Horário Padrão</h4>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Input type="time" value={defaultStart} onChange={e => setDefaultStart(e.target.value)} className="w-24" />
+                      <span>até</span>
+                      <Input type="time" value={defaultEnd} onChange={e => setDefaultEnd(e.target.value)} className="w-24" />
+                    </div>
+                    <Button size="sm" variant="outline" type="button" onClick={handleApplyDefault} className="w-full sm:w-auto">Aplicar horário padrão</Button>
+                  </div>
+                  <h4 className="font-semibold mb-3">Dias para aplicar o padrão</h4>
+                  <div className="flex flex-wrap gap-4">
+                    {daysOfWeek.map(day => (
+                      <label key={day.key} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={defaultDays.includes(day.key)}
+                          onChange={e => setDefaultDays(ds => e.target.checked ? [...ds, day.key] : ds.filter(d => d !== day.key))}
+                        />
+                        <span className="text-sm">{day.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-3">Horários por Dia</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {editSchedules.map((sch, idx) => (
+                      <div key={sch.day_of_week} className="p-4 border rounded-lg flex flex-col gap-2 bg-background">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
+                            <Switch checked={sch.active} onCheckedChange={checked => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
+                          </div>
+                        </div>
+                        {sch.active && (
+                          <div className="flex items-center gap-2">
+                            <Input type="time" value={sch.start_time} onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} className="w-24" />
+                            <span>até</span>
+                            <Input type="time" value={sch.end_time} onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} className="w-24" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="sticky bottom-0 left-0 right-0 bg-background px-4 sm:px-6 lg:px-8 py-4 border-t border-border/20 z-20 flex flex-col sm:flex-row sm:justify-end gap-2">
+                <Button type="submit" disabled={saving} className="btn-premium w-full sm:w-auto">
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   );
 }

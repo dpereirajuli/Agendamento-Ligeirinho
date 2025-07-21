@@ -69,7 +69,7 @@ export const Header = ({ isAuthenticated = false, userRole, onLogout }: HeaderPr
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <img src={logo} alt="Logo Barbearia Ligeirinho" className="h-20 w-auto mt-5" />
+            <img src={logo} alt="Logo Barbearia" className="h-16 w-auto rounded pt-1" />
             <span className="text-xl font-bold tracking-tight">Barbearia Ligeirinho</span>
           </Link>
 
