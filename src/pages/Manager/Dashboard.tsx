@@ -34,9 +34,7 @@ export default function Dashboard() {
   const stockValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
   const lowStockProducts = products.filter(p => p.stock <= p.minStock);
   
-  const topBarber = barbers.reduce((top, barber) => 
-    barber.services > top.services ? barber : top, barbers[0] || { name: '-', services: 0 }
-  );
+  const topBarber = barbers[0] || { name: 'Nenhum barbeiro' };
 
   // Função de refresh mais suave
   const handleRefresh = async () => {
@@ -118,13 +116,13 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Barbeiro</CardTitle>
+            <CardTitle className="text-sm font-medium">Barbeiros</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-lg font-bold">{topBarber.name}</div>
             <p className="text-xs text-muted-foreground">
-              {topBarber.services} serviços
+              {barbers.length} barbeiros cadastrados
             </p>
           </CardContent>
         </Card>

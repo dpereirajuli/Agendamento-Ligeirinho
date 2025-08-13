@@ -19,7 +19,6 @@ interface Service {
 interface Barber {
   id: string;
   name: string;
-  services: number;
 }
 
 interface Transaction {
@@ -59,13 +58,14 @@ interface AppContextType {
   transactions: Transaction[];
   fiadoClients: FiadoClient[];
   user: any;
+  setBarbers: React.Dispatch<React.SetStateAction<Barber[]>>;
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   addService: (service: Omit<Service, 'id'>) => Promise<void>;
   updateService: (id: string, service: Partial<Service>) => Promise<void>;
   deleteService: (id: string) => Promise<void>;
-  addBarber: (barber: Omit<Barber, 'id' | 'services'>) => Promise<void>;
+  addBarber: (barber: Omit<Barber, 'id'>) => Promise<void>;
   updateBarber: (id: string, barber: Partial<Barber>) => Promise<void>;
   deleteBarber: (id: string) => Promise<void>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => Promise<void>;
@@ -93,44 +93,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         console.log('setLoading(false) chamado no AppProvider');
       });
-      checkAndResetMonthlyServices();
     }
   }, [profile]);
 
-  const checkAndResetMonthlyServices = async () => {
-    try {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const lastResetKey = `barber_services_reset_${currentYear}_${currentMonth}`;
-      
-      // Verificar se já foi resetado este mês
-      const lastReset = localStorage.getItem(lastResetKey);
-      
-      if (!lastReset) {
-        // Resetar serviços de todos os barbeiros
-        const { error } = await supabase
-          .from('barbers')
-          .update({ services: 0 });
-        
-        if (error) {
-          console.error('Error resetting barber services:', error);
-        } else {
-          console.log('Barber services reset for new month');
-          localStorage.setItem(lastResetKey, 'true');
-          
-          // Limpar chaves antigas do localStorage
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('barber_services_reset_') && key !== lastResetKey) {
-              localStorage.removeItem(key);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error in checkAndResetMonthlyServices:', error);
-    }
-  };
+
 
   const fetchData = async () => {
     try {
@@ -179,8 +145,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else if (barbersData) {
         const mappedBarbers = barbersData.map(b => ({
           id: b.id,
-          name: b.name,
-          services: b.services || 0
+          name: b.name
         }));
         console.log('Mapped barbers:', mappedBarbers);
         setBarbers(mappedBarbers);
@@ -209,8 +174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.log('Mapped transactions:', mappedTransactions);
         setTransactions(mappedTransactions);
         
-        // Recalcular serviços dos barbeiros baseado nas transações do mês atual
-        await updateBarbersServiceCount(mappedTransactions);
+
       }
 
       // Fetch fiado clients with their transactions
@@ -245,53 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateBarbersServiceCount = async (transactionsData: Transaction[]) => {
-    try {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      
-      // Contar TODOS os serviços por barbeiro no mês atual (incluindo fiados)
-      const serviceCountByBarber: { [key: string]: number } = {};
-      
-      // Contar serviços de todas as transações de serviço, independente do status
-      transactionsData.forEach(transaction => {
-        if (transaction.type === 'service' && 
-            transaction.barberId && 
-            transaction.date.getMonth() === currentMonth &&
-            transaction.date.getFullYear() === currentYear) {
-          
-          // Extrair quantidade de serviços da descrição
-          const match = transaction.description.match(/^(\d+)x/);
-          const quantity = match ? parseInt(match[1]) : 1;
-          
-          serviceCountByBarber[transaction.barberId] = (serviceCountByBarber[transaction.barberId] || 0) + quantity;
-        }
-      });
 
-      console.log('Service count by barber:', serviceCountByBarber);
-
-      // Atualizar cada barbeiro no banco
-      for (const barberId in serviceCountByBarber) {
-        await supabase
-          .from('barbers')
-          .update({ services: serviceCountByBarber[barberId] })
-          .eq('id', barberId);
-      }
-
-      // Buscar dados atualizados dos barbeiros
-      const { data: updatedBarbers } = await supabase.from('barbers').select('*');
-      if (updatedBarbers) {
-        const mappedBarbers = updatedBarbers.map(b => ({
-          id: b.id,
-          name: b.name,
-          services: serviceCountByBarber[b.id] || 0
-        }));
-        setBarbers(mappedBarbers);
-      }
-    } catch (error) {
-      console.error('Error updating barber service count:', error);
-    }
-  };
 
   const addProduct = async (product: Omit<Product, 'id'>) => {
     console.log('Adding product:', product);
@@ -401,12 +319,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setServices(prev => prev.filter(s => s.id !== id));
   };
 
-  const addBarber = async (barber: Omit<Barber, 'id' | 'services'>) => {
+  const addBarber = async (barber: Omit<Barber, 'id'>) => {
     const { data, error } = await supabase
       .from('barbers')
       .insert({
-        name: barber.name,
-        services: 0
+        name: barber.name
       })
       .select()
       .single();
@@ -415,8 +332,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (data) {
       setBarbers(prev => [...prev, {
         id: data.id,
-        name: data.name,
-        services: data.services || 0
+        name: data.name
       }]);
     }
   };
@@ -424,7 +340,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateBarber = async (id: string, barber: Partial<Barber>) => {
     const updateData: any = {};
     if (barber.name) updateData.name = barber.name;
-    if (barber.services !== undefined) updateData.services = barber.services;
 
     const { error } = await supabase
       .from('barbers')
@@ -484,39 +399,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (error) throw error;
     
-    // Se for um serviço ou misto, atualizar contador do barbeiro
-    if ((correctType === 'service' || correctType === 'mixed') && transaction.barberId) {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      
-      // Extrair quantidade de serviços da descrição
-      const match = transaction.description.match(/^(\d+)x/);
-      const quantity = match ? parseInt(match[1]) : 1;
-      
-      // Contar serviços do barbeiro no mês atual (incluindo transações mistas)
-      const servicesThisMonth = transactions.filter(t => 
-        (t.type === 'service' || t.type === 'mixed') && 
-        t.barberId === transaction.barberId &&
-        t.date.getMonth() === currentMonth &&
-        t.date.getFullYear() === currentYear
-      ).reduce((sum, t) => {
-        // Para transações mistas, contar apenas os itens que são serviços
-        if (t.type === 'mixed') {
-          const items = t.description.split(', ').map(item => item.trim());
-          const serviceItems = items.filter(item => item.includes('(') && item.includes(')'));
-          return sum + serviceItems.length;
-        } else {
-          const tMatch = t.description.match(/^(\d+)x/);
-          const tQuantity = tMatch ? parseInt(tMatch[1]) : 1;
-          return sum + tQuantity;
-        }
-      }, 0) + quantity; // +1 para incluir o novo serviço
-      
-      await supabase
-        .from('barbers')
-        .update({ services: servicesThisMonth })
-        .eq('id', transaction.barberId);
-    }
+
     
     // If it's a fiado transaction, also create fiado client and transaction
     if (transaction.paymentMethod === 'fiado' && transaction.clientName) {
@@ -607,42 +490,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        // Se for um serviço ou misto, decrementar contador do barbeiro
-        if ((transactionToDelete.type === 'service' || transactionToDelete.type === 'mixed') && transactionToDelete.barberId) {
-          const currentMonth = new Date().getMonth();
-          const currentYear = new Date().getFullYear();
-          
-          // Só decrementar se for do mês atual
-          if (transactionToDelete.date.getMonth() === currentMonth && 
-              transactionToDelete.date.getFullYear() === currentYear) {
-            
-            // Extrair quantidade de serviços da descrição
-            let quantity = 1;
-            if (transactionToDelete.type === 'mixed') {
-              const items = transactionToDelete.description.split(', ').map(item => item.trim());
-              const serviceItems = items.filter(item => item.includes('(') && item.includes(')'));
-              quantity = serviceItems.length;
-            } else {
-              const match = transactionToDelete.description.match(/^(\d+)x/);
-              quantity = match ? parseInt(match[1]) : 1;
-            }
-            
-            // Buscar contador atual do barbeiro
-            const { data: barber } = await supabase
-              .from('barbers')
-              .select('services')
-              .eq('id', transactionToDelete.barberId)
-              .single();
-            
-            if (barber) {
-              const newServiceCount = Math.max(0, (barber.services || 0) - quantity);
-              await supabase
-                .from('barbers')
-                .update({ services: newServiceCount })
-                .eq('id', transactionToDelete.barberId);
-            }
-          }
-        }
+
 
         // Se for um produto ou misto, restaurar o estoque
         if (transactionToDelete.type === 'product' || transactionToDelete.type === 'mixed') {
@@ -790,6 +638,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       fiadoClients,
       user: profile,
       loading,
+      setBarbers,
       addProduct,
       updateProduct,
       deleteProduct,

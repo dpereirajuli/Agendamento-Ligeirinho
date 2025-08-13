@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, User, Scissors, Edit, Trash2 } from 'lucide-react';
+import { Plus, User, Edit, Trash2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,6 @@ interface Barber {
   id: string;
   name: string;
   created_at: string;
-  services: number;
 }
 
 function getDefaultSchedules() {
@@ -62,6 +61,32 @@ export default function Barbers() {
   const [editDefaultDays, setEditDefaultDays] = useState<string[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
   const [editName, setEditName] = useState('');
 
+  // Funções de validação
+  const validateSchedule = (schedule: Schedule): boolean => {
+    if (!schedule.active) return true;
+    if (!schedule.start_time || !schedule.end_time) return false;
+    return schedule.start_time < schedule.end_time;
+  };
+
+  const validateAllSchedules = (schedules: Schedule[]): boolean => {
+    return schedules.every(validateSchedule);
+  };
+
+  const getScheduleError = (schedule: Schedule): string | null => {
+    if (!schedule.active) return null;
+    if (!schedule.start_time || !schedule.end_time) {
+      return 'Preencha os horários quando o dia estiver ativo';
+    }
+    if (schedule.start_time >= schedule.end_time) {
+      return 'Horário inicial deve ser menor que o horário final';
+    }
+    return null;
+  };
+
+  const hasScheduleErrors = (schedules: Schedule[]): boolean => {
+    return schedules.some(schedule => getScheduleError(schedule) !== null);
+  };
+
   const fetchBarbers = async () => {
     setIsLoading(true);
     try {
@@ -73,7 +98,6 @@ export default function Barbers() {
           id: barber.id,
           name: barber.name,
           created_at: barber.created_at,
-          services: barber.services || 0,
         })));
       }
     } catch (error: any) {
@@ -93,6 +117,16 @@ export default function Barbers() {
   }, []);
 
   const handleApplyCreateDefault = () => {
+    // Validar se o horário padrão é válido
+    if (createDefaultStart >= createDefaultEnd) {
+      toast({
+        title: 'Horário inválido',
+        description: 'O horário inicial deve ser menor que o horário final',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setCreateSchedules(schedules =>
       schedules.map(sch =>
         createDefaultDays.includes(sch.day_of_week)
@@ -103,6 +137,16 @@ export default function Barbers() {
   };
 
   const handleApplyEditDefault = () => {
+    // Validar se o horário padrão é válido
+    if (editDefaultStart >= editDefaultEnd) {
+      toast({
+        title: 'Horário inválido',
+        description: 'O horário inicial deve ser menor que o horário final',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setEditSchedules(schedules =>
       schedules.map(sch =>
         editDefaultDays.includes(sch.day_of_week)
@@ -115,7 +159,20 @@ export default function Barbers() {
   const handleSubmit = async (data: { name: string }) => {
     setIsLoading(true);
     setCreateError(null);
+    
     try {
+      // Validar horários antes de prosseguir
+      const schedulesToValidate = editingBarber ? editSchedules : createSchedules;
+      if (hasScheduleErrors(schedulesToValidate)) {
+        toast({
+          title: 'Erro de validação',
+          description: 'Corrija os erros nos horários antes de salvar',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
       if (editingBarber) {
         // Update barber
         const { data: updateData, error: updateError } = await supabase
@@ -159,6 +216,7 @@ export default function Barbers() {
         // Add new barber
         if (!data.name.trim()) {
           setCreateError('Nome do barbeiro é obrigatório.');
+          setIsLoading(false);
           return;
         }
         const { data: newBarber, error } = await supabase.from('barbers').insert([{ name: data.name }]).select();
@@ -181,7 +239,7 @@ export default function Barbers() {
             throw new Error('Erro ao salvar horários.');
           }
         }
-        await addBarber({ id: barberId, name: data.name, created_at: new Date().toISOString(), services: 0 });
+        await addBarber({ id: barberId, name: data.name, created_at: new Date().toISOString() });
         toast({
           title: 'Barbeiro adicionado!',
           description: `${data.name} foi cadastrado com sucesso.`,
@@ -330,12 +388,36 @@ export default function Barbers() {
                     <h4 className="font-semibold mb-3">Horário Padrão</h4>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                       <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Input type="time" value={createDefaultStart} onChange={e => setCreateDefaultStart(e.target.value)} className="w-24" />
+                        <Input 
+                          type="time" 
+                          value={createDefaultStart} 
+                          onChange={e => setCreateDefaultStart(e.target.value)} 
+                          className={`w-24 ${createDefaultStart >= createDefaultEnd ? 'border-red-500' : ''}`}
+                        />
                         <span>até</span>
-                        <Input type="time" value={createDefaultEnd} onChange={e => setCreateDefaultEnd(e.target.value)} className="w-24" />
+                        <Input 
+                          type="time" 
+                          value={createDefaultEnd} 
+                          onChange={e => setCreateDefaultEnd(e.target.value)} 
+                          className={`w-24 ${createDefaultStart >= createDefaultEnd ? 'border-red-500' : ''}`}
+                        />
                       </div>
-                      <Button size="sm" variant="outline" type="button" onClick={handleApplyCreateDefault} className="w-full sm:w-auto">Aplicar padrão</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        type="button" 
+                        onClick={handleApplyCreateDefault} 
+                        disabled={createDefaultStart >= createDefaultEnd}
+                        className="w-full sm:w-auto"
+                      >
+                        Aplicar padrão
+                      </Button>
                     </div>
+                    {createDefaultStart >= createDefaultEnd && (
+                      <div className="text-xs text-red-500 mb-2">
+                        O horário inicial deve ser menor que o horário final
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-3">Dias para aplicar o padrão</h4>
                     <div className="flex flex-wrap gap-4">
                       {daysOfWeek.map(day => (
@@ -353,29 +435,55 @@ export default function Barbers() {
                   <div>
                     <h4 className="font-semibold mb-3">Horários por Dia</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {createSchedules.map((sch, idx) => (
-                        <div key={sch.day_of_week} className="p-4 border rounded-lg flex flex-col gap-2 bg-background">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
-                              <Switch checked={sch.active} onCheckedChange={checked => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
+                      {createSchedules.map((sch, idx) => {
+                        const scheduleError = getScheduleError(sch);
+                        const hasError = scheduleError !== null;
+                        
+                        return (
+                          <div key={sch.day_of_week} className={`p-4 border rounded-lg flex flex-col gap-2 bg-background ${hasError ? 'border-red-500' : 'border-border'}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
+                                <Switch checked={sch.active} onCheckedChange={checked => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
+                              </div>
                             </div>
+                            {sch.active && (
+                              <>
+                                <div className="flex items-center gap-2">
+                                  <Input 
+                                    type="time" 
+                                    value={sch.start_time} 
+                                    onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} 
+                                    className={`w-24 ${hasError && !sch.start_time ? 'border-red-500' : ''}`}
+                                  />
+                                  <span>até</span>
+                                  <Input 
+                                    type="time" 
+                                    value={sch.end_time} 
+                                    onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} 
+                                    className={`w-24 ${hasError && !sch.end_time ? 'border-red-500' : ''}`}
+                                  />
+                                </div>
+                                {hasError && (
+                                  <div className="text-xs text-red-500 mt-1">
+                                    {scheduleError}
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
-                          {sch.active && (
-                            <div className="flex items-center gap-2">
-                              <Input type="time" value={sch.start_time} onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} className="w-24" />
-                              <span>até</span>
-                              <Input type="time" value={sch.end_time} onChange={e => setCreateSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} className="w-24" />
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
                 <DialogFooter className="sticky bottom-0 left-0 right-0 bg-background px-4 sm:px-6 lg:px-8 py-4 border-t border-border/20 z-20 flex flex-col sm:flex-row sm:justify-end gap-2">
-                  <Button type="submit" disabled={isLoading} className="btn-premium w-full sm:w-auto">
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || hasScheduleErrors(createSchedules)} 
+                    className="btn-premium w-full sm:w-auto"
+                  >
                     {isLoading ? 'Salvando...' : 'Salvar'}
                   </Button>
                 </DialogFooter>
@@ -417,15 +525,6 @@ export default function Barbers() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Serviços realizados:</span>
-                      <div className="flex items-center gap-1">
-                        <Scissors className="h-4 w-4 text-gray-600" />
-                        <span className="font-bold text-gray-900">
-                          {barber.services}
-                        </span>
-                      </div>
-                    </div>
                     <div className="flex gap-2 pt-2">
                       <Button
                         variant="outline"
@@ -476,12 +575,36 @@ export default function Barbers() {
                   <h4 className="font-semibold mb-3">Horário Padrão</h4>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <Input type="time" value={editDefaultStart} onChange={e => setEditDefaultStart(e.target.value)} className="w-24" />
+                      <Input 
+                        type="time" 
+                        value={editDefaultStart} 
+                        onChange={e => setEditDefaultStart(e.target.value)} 
+                        className={`w-24 ${editDefaultStart >= editDefaultEnd ? 'border-red-500' : ''}`}
+                      />
                       <span>até</span>
-                      <Input type="time" value={editDefaultEnd} onChange={e => setEditDefaultEnd(e.target.value)} className="w-24" />
+                      <Input 
+                        type="time" 
+                        value={editDefaultEnd} 
+                        onChange={e => setEditDefaultEnd(e.target.value)} 
+                        className={`w-24 ${editDefaultStart >= editDefaultEnd ? 'border-red-500' : ''}`}
+                      />
                     </div>
-                    <Button size="sm" variant="outline" type="button" onClick={handleApplyEditDefault} className="w-full sm:w-auto">Aplicar horário padrão</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      type="button" 
+                      onClick={handleApplyEditDefault} 
+                      disabled={editDefaultStart >= editDefaultEnd}
+                      className="w-full sm:w-auto"
+                    >
+                      Aplicar horário padrão
+                    </Button>
                   </div>
+                  {editDefaultStart >= editDefaultEnd && (
+                    <div className="text-xs text-red-500 mb-2">
+                      O horário inicial deve ser menor que o horário final
+                    </div>
+                  )}
                   <h4 className="font-semibold mb-3">Dias para aplicar o padrão</h4>
                   <div className="flex flex-wrap gap-4">
                     {daysOfWeek.map(day => (
@@ -499,29 +622,55 @@ export default function Barbers() {
                 <div>
                   <h4 className="font-semibold mb-3">Horários por Dia</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {editSchedules.map((sch, idx) => (
-                      <div key={sch.day_of_week} className="p-4 border rounded-lg flex flex-col gap-2 bg-background">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
-                            <Switch checked={sch.active} onCheckedChange={checked => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
+                    {editSchedules.map((sch, idx) => {
+                      const scheduleError = getScheduleError(sch);
+                      const hasError = scheduleError !== null;
+                      
+                      return (
+                        <div key={sch.day_of_week} className={`p-4 border rounded-lg flex flex-col gap-2 bg-background ${hasError ? 'border-red-500' : 'border-border'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{daysOfWeek.find(d => d.key === sch.day_of_week)?.label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">{sch.active ? 'Ativo' : 'Não trabalha'}</span>
+                              <Switch checked={sch.active} onCheckedChange={checked => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, active: checked } : s))} />
+                            </div>
                           </div>
+                          {sch.active && (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="time" 
+                                  value={sch.start_time} 
+                                  onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} 
+                                  className={`w-24 ${hasError && !sch.start_time ? 'border-red-500' : ''}`}
+                                />
+                                <span>até</span>
+                                <Input 
+                                  type="time" 
+                                  value={sch.end_time} 
+                                  onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} 
+                                  className={`w-24 ${hasError && !sch.end_time ? 'border-red-500' : ''}`}
+                                />
+                              </div>
+                              {hasError && (
+                                <div className="text-xs text-red-500 mt-1">
+                                  {scheduleError}
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
-                        {sch.active && (
-                          <div className="flex items-center gap-2">
-                            <Input type="time" value={sch.start_time} onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))} className="w-24" />
-                            <span>até</span>
-                            <Input type="time" value={sch.end_time} onChange={e => setEditSchedules(schs => schs.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))} className="w-24" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
               <DialogFooter className="sticky bottom-0 left-0 right-0 bg-background px-4 sm:px-6 lg:px-8 py-4 border-t border-border/20 z-20 flex flex-col sm:flex-row sm:justify-end gap-2">
-                <Button type="submit" disabled={isLoading} className="btn-premium w-full sm:w-auto">
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || hasScheduleErrors(editSchedules)} 
+                  className="btn-premium w-full sm:w-auto"
+                >
                   {isLoading ? 'Salvando...' : 'Salvar'}
                 </Button>
               </DialogFooter>
