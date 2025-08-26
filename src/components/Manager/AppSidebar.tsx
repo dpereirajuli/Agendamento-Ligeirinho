@@ -11,7 +11,9 @@ import {
   Users,
   Settings,
   Mail,
-  LogOut
+  LogOut,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -50,7 +52,7 @@ export function AppSidebar() {
   const { profile, signOut, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { state, setOpenMobile } = useSidebar();
+  const { state, setOpenMobile, toggleSidebar } = useSidebar();
   const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
@@ -71,20 +73,36 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-gray-200">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt="Logo" className="w-12 h-12" />
-          {!isCollapsed && (
-            <div className="min-w-0">
-              <h2 className="font-bold text-gray-900 truncate">Ligeirinho</h2>
-              <p className="text-xs text-gray-500">Barbershop</p>
-            </div>
+    <Sidebar collapsible="icon" className="border-r border-gray-700 bg-gray-900">
+      <SidebarHeader className="p-4 bg-gray-900">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/logo.svg" alt="Logo" className="w-12 h-12" />
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <h2 className="font-bold text-white truncate">Ligeirinho</h2>
+                <p className="text-xs text-gray-300">Barbershop</p>
+              </div>
+            )}
+          </div>
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSidebar}
+              className="h-6 w-6 p-0 hover:bg-gray-800 text-gray-300 hover:text-white"
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </Button>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="bg-gray-900">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -94,7 +112,7 @@ export function AppSidebar() {
                     asChild 
                     isActive={location.pathname === item.href}
                     onClick={() => handleNavClick(item.href)}
-                    className="data-[active=true]:bg-gray-900 data-[active=true]:text-white hover:bg-gray-100"
+                    className="data-[active=true]:bg-blue-600 data-[active=true]:text-white hover:bg-gray-800 text-gray-300 hover:text-white"
                   >
                     <button className="flex items-center gap-2 w-full">
                       <item.icon className="h-5 w-5" />
@@ -109,7 +127,7 @@ export function AppSidebar() {
 
         {isAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-gray-700">Administração</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-gray-400">Administração</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminNavigation.map((item) => (
@@ -118,7 +136,7 @@ export function AppSidebar() {
                       asChild 
                       isActive={location.pathname === item.href}
                       onClick={() => handleNavClick(item.href)}
-                      className="data-[active=true]:bg-gray-900 data-[active=true]:text-white hover:bg-gray-100"
+                      className="data-[active=true]:bg-blue-600 data-[active=true]:text-white hover:bg-gray-800 text-gray-300 hover:text-white"
                     >
                       <button className="flex items-center gap-2 w-full">
                         <item.icon className="h-5 w-5" />
@@ -133,12 +151,12 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 bg-gray-900">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={handleSignOut}
-          className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800"
         >
           <LogOut className="h-4 w-4" />
           {!isCollapsed && <span className="ml-2">Sair</span>}
