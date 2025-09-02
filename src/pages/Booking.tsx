@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Phone, MessageSquare, User, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, Phone, MessageSquare, User, ChevronLeft, ChevronRight, CheckCircle, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,11 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Helmet } from 'react-helmet-async';
 
+
 interface Barber {
   id: string;
   name: string;
   specialty?: string;
-  working_days?: number[];
 }
 
 interface Service {
@@ -65,158 +65,90 @@ export default function Booking() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const [isLoadingDayAvailability, setIsLoadingDayAvailability] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [services, setServices] = useState<Service[]>([]);
   const [lastBooking, setLastBooking] = useState<any | null>(null);
-  const [hasError, setHasError] = useState(false);
+
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [dayAvailability, setDayAvailability] = useState<Record<string, boolean>>({});
+  const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
-    console.log('Debug - Initial useEffect triggered');
     try {
       fetchData();
     } catch (error) {
       console.error('Error in initial useEffect:', error);
-      setHasError(true);
     }
   }, []);
 
   // Atualizar calendário quando barbeiro for selecionado
   useEffect(() => {
     if (selectedBarber) {
-      console.log('Debug - Barber selected, updating calendar');
-      // Forçar re-render do calendário
       setCurrentMonth(new Date(currentMonth));
-      // Limpar disponibilidade anterior
       setDayAvailability({});
     }
   }, [selectedBarber]);
 
-  // Atualizar disponibilidade dos dias quando barbeiro ou serviços mudarem
+  // Carregar disponibilidade automaticamente quando barbeiro e serviços forem selecionados
   useEffect(() => {
     if (selectedBarber && selectedServices.length > 0) {
       updateMonthAvailability();
     } else {
       setDayAvailability({});
     }
-  }, [selectedBarber, selectedServices, currentMonth]);
-
-
+  }, [selectedBarber, selectedServices]);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      console.log('Debug - fetchData started');
-      
-      // Carregar barbeiros
       const { data: barbersData, error: barbersError } = await supabase
         .from('barbers')
         .select('*')
         .order('name');
-      
-      if (barbersError) {
-        console.error('Error loading barbers:', barbersError);
-        throw new Error('Falha ao carregar barbeiros');
-      }
-      
+      if (barbersError) throw new Error('Falha ao carregar barbeiros');
       setBarbers(barbersData || []);
-      console.log('Debug - Barbers loaded:', barbersData);
 
-      // Carregar serviços
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select('*')
         .order('type');
-      
-      if (servicesError) {
-        console.error('Error loading services:', servicesError);
-        throw new Error('Falha ao carregar serviços');
-      }
-      
+      if (servicesError) throw new Error('Falha ao carregar serviços');
       setServices(servicesData || []);
-      console.log('Debug - Services loaded:', servicesData);
 
-      // Verificar se há dados suficientes
       if (!barbersData || barbersData.length === 0) {
-        toast({
-          title: 'Aviso',
-          description: 'Nenhum barbeiro cadastrado. Entre em contato com o administrador.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Aviso', description: 'Nenhum barbeiro cadastrado. Entre em contato com o administrador.', variant: 'destructive' });
       }
-
       if (!servicesData || servicesData.length === 0) {
-        toast({
-          title: 'Aviso',
-          description: 'Nenhum serviço cadastrado. Entre em contato com o administrador.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Aviso', description: 'Nenhum serviço cadastrado. Entre em contato com o administrador.', variant: 'destructive' });
       }
-
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Falha ao carregar dados. Tente recarregar a página.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: error.message || 'Falha ao carregar dados. Tente recarregar a página.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('Debug - useEffect triggered:', { 
-      selectedDate, 
-      selectedServices,
-      selectedBarber,
-      selectedServicesLength: selectedServices.length,
-      shouldCallFetch: selectedDate && selectedServices.length > 0 && selectedBarber
-    });
-    
     if (selectedDate && selectedServices.length > 0 && selectedBarber) {
-      console.log('Debug - Calling fetchBarberAvailability');
       fetchBarberAvailability();
     } else {
-      console.log('Debug - Clearing availability');
       setAvailableTimes([]);
     }
   }, [selectedDate, selectedServices, selectedBarber]);
 
   const fetchBarberAvailability = async () => {
-    console.log('Debug - fetchBarberAvailability called!');
     setIsLoadingAvailability(true);
     try {
-      console.log('Debug - fetchBarberAvailability started with:', {
-        selectedDate,
-        selectedServices: selectedServices.length,
-        selectedBarber
-      });
+      if (!selectedServices.length) return;
 
-      console.log('Debug - fetchBarberAvailability:', {
-        selectedDate,
-        selectedServices,
-        selectedBarber
-      });
-
-      if (!selectedServices.length) {
-        console.error('Serviços não encontrados!');
-        return;
-      }
-
-      // Usar variáveis já calculadas globalmente
       const currentTotalDuration = totalDuration || 30;
-
-      // Obter o dia da semana da data selecionada
       const date = new Date(selectedDate);
-      const dayOfWeek = date.getDay(); // 0 = domingo, 1 = segunda, etc.
+      const dayOfWeek = date.getDay();
       const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const dayName = dayNames[dayOfWeek];
 
-      console.log('Debug - Day of week:', { dayOfWeek, dayName, selectedDate });
-
-      // Buscar horário de trabalho do barbeiro para este dia
       const { data: barberSchedule, error: scheduleError } = await supabase
         .from('barber_schedules')
         .select('start_time, end_time')
@@ -224,156 +156,66 @@ export default function Booking() {
         .eq('day_of_week', dayName)
         .single();
 
-      if (scheduleError) {
-        console.error('Error fetching barber schedule:', scheduleError);
-        // Se não encontrar horário, significa que o barbeiro não trabalha neste dia
-        console.log('Debug - No schedule found for this day');
+      if (scheduleError || !barberSchedule) {
         setAvailableTimes([]);
         return;
       }
 
-      if (!barberSchedule) {
-        console.log('Debug - No schedule found for this day');
-        setAvailableTimes([]);
-        return;
-      }
-
-      console.log('Debug - Barber schedule:', barberSchedule);
-
-      // Buscar agendamentos existentes
       const { data: existingAppointments, error: appointmentsError } = await supabase
         .from('bookings')
         .select('start_time, end_time')
         .eq('barber_id', selectedBarber)
         .eq('date', selectedDate);
 
-      if (appointmentsError) {
-        console.error('Error fetching appointments:', appointmentsError);
-        return;
-      }
+      if (appointmentsError) return;
 
-      console.log('Debug - Existing appointments:', existingAppointments);
-
-      // Gerar horários disponíveis baseados no horário de trabalho do barbeiro
       const availableSlots: string[] = [];
-      const interval = 15; // intervalos de 15 minutos
-
-      // Converter horários para minutos para facilitar cálculos
+      const interval = 15; // 15 min
       const startTime = barberSchedule.start_time;
       const endTime = barberSchedule.end_time;
-      
       const [startHour, startMinute] = startTime.split(':').map(Number);
       const [endHour, endMinute] = endTime.split(':').map(Number);
-      
       const startMinutes = startHour * 60 + startMinute;
       const endMinutes = endHour * 60 + endMinute;
 
-      console.log('Debug - Time calculations:', {
-        startTime,
-        endTime,
-        startMinutes,
-        endMinutes,
-        totalDuration: currentTotalDuration
-      });
-
-      console.log('Debug - Starting time generation:', {
-        startMinutes,
-        endMinutes,
-        totalDuration: currentTotalDuration,
-        interval
-      });
-      
-      let slotCount = 0;
-      // Gerar slots de 15 em 15 minutos
       for (let currentMinutes = startMinutes; currentMinutes + currentTotalDuration <= endMinutes; currentMinutes += interval) {
-        slotCount++;
         const hour = Math.floor(currentMinutes / 60);
         const minute = currentMinutes % 60;
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         
-                  // Verificar se há conflito com agendamentos existentes
           const hasConflict = existingAppointments?.some(appointment => {
             const appointmentStart = appointment.start_time;
             const appointmentEnd = appointment.end_time;
-            
-            // Verificar sobreposição
             const slotStart = timeString;
             const slotEnd = addMinutes(timeString, currentTotalDuration);
-            
-            // Há conflito se:
-            // 1. O slot começa durante um agendamento existente
-            // 2. O slot termina durante um agendamento existente  
-            // 3. O slot engloba completamente um agendamento existente
-            const conflicts = (
+          return (
               (slotStart >= appointmentStart && slotStart < appointmentEnd) ||
               (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
               (slotStart <= appointmentStart && slotEnd >= appointmentEnd)
             );
-            
-            if (conflicts) {
-              console.log('Debug - Conflict found:', {
-                slotStart,
-                slotEnd,
-                appointmentStart,
-                appointmentEnd,
-                timeString
-              });
-            }
-            
-            return conflicts;
-          });
+        });
 
-        // Verificar se não é um horário passado (se for hoje)
         const now = new Date();
-        const today = [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, '0'),
-          String(now.getDate()).padStart(2, '0'),
-        ].join('-');
-        
+        const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
         let isPastTime = false;
         if (selectedDate === today) {
           const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-          // Adicionar margem de 30 minutos para agendamentos
           const [currentHour, currentMinute] = currentTime.split(':').map(Number);
           const currentTotalMinutes = currentHour * 60 + currentMinute;
           const [slotHour, slotMinute] = timeString.split(':').map(Number);
           const slotTotalMinutes = slotHour * 60 + slotMinute;
-          
-          // Horário deve ser maior que o horário atual + 30 minutos
           isPastTime = slotTotalMinutes <= (currentTotalMinutes + 30);
-          
-          console.log('Debug - Time check:', {
-            selectedDate,
-            today,
-            currentTime,
-            timeString,
-            currentTotalMinutes,
-            slotTotalMinutes,
-            isPastTime,
-            margin: currentTotalMinutes + 30
-          });
         }
-        
-
         
         if (!hasConflict && !isPastTime) {
           availableSlots.push(timeString);
         }
       }
 
-      console.log('Debug - Loop finished, total slots generated:', slotCount);
-      console.log('Debug - Available slots:', availableSlots);
-      console.log('Debug - Setting available times:', availableSlots.length, 'slots');
       setAvailableTimes(availableSlots);
-
     } catch (error) {
       console.error('Erro ao buscar horários disponíveis:', error);
-      toast({
-        title: 'Erro',
-        description: 'Falha ao carregar horários. Tente novamente.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: 'Falha ao carregar horários. Tente novamente.', variant: 'destructive' });
     } finally {
       setIsLoadingAvailability(false);
     }
@@ -382,48 +224,43 @@ export default function Booking() {
   const updateMonthAvailability = async () => {
     if (!selectedBarber || !selectedServices.length) return;
 
-    const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-    const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-    const availability: Record<string, boolean> = {};
+    setIsLoadingDayAvailability(true);
+    try {
+      const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const availability: Record<string, boolean> = {};
 
-    const now = new Date();
-    const today = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-    ].join('-');
+      const now = new Date();
+      const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
 
-    // Verificar cada dia do mês
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      const dateStr = [
-        currentMonth.getFullYear(),
-        String(currentMonth.getMonth() + 1).padStart(2, '0'),
-        String(d).padStart(2, '0'),
-      ].join('-');
-
-      // Só verificar dias que são hoje ou no futuro
-      if (dateStr >= today) {
-        const isAvailable = await checkDayAvailability(dateStr, selectedBarber);
-        availability[dateStr] = isAvailable;
-      } else {
-        availability[dateStr] = false;
+      for (let d = 1; d <= lastDay.getDate(); d++) {
+        const dateStr = [currentMonth.getFullYear(), String(currentMonth.getMonth() + 1).padStart(2, '0'), String(d).padStart(2, '0')].join('-');
+        if (dateStr >= today) {
+          const isAvailable = await checkDayAvailability(dateStr, selectedBarber);
+          availability[dateStr] = isAvailable;
+        } else {
+          availability[dateStr] = false;
+        }
       }
-    }
 
-    setDayAvailability(availability);
+      setDayAvailability(availability);
+    } catch (error) {
+      console.error('Erro ao verificar disponibilidade dos dias:', error);
+      toast({ title: 'Erro', description: 'Falha ao verificar disponibilidade dos dias. Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsLoadingDayAvailability(false);
+    }
   };
 
   const checkDayAvailability = async (dateStr: string, barberId: string) => {
     if (!selectedServices.length || !barberId) return false;
 
     try {
-      // Obter o dia da semana da data
       const date = new Date(dateStr);
       const dayOfWeek = date.getDay();
       const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const dayName = dayNames[dayOfWeek];
 
-      // Buscar horário de trabalho do barbeiro para este dia
       const { data: barberSchedule, error: scheduleError } = await supabase
         .from('barber_schedules')
         .select('start_time, end_time')
@@ -431,57 +268,39 @@ export default function Booking() {
         .eq('day_of_week', dayName)
         .single();
 
-      if (scheduleError || !barberSchedule) {
-        return false;
-      }
+      if (scheduleError || !barberSchedule) return false;
 
-      // Calcular duração baseada no serviço mais longo
       const selectedServicesData = services.filter((s) => selectedServices.includes(s.id));
       if (selectedServicesData.length === 0) return false;
-      
-      const longestService = selectedServicesData.reduce((longest, current) => 
-        current.duration > longest.duration ? current : longest
-      );
+      const longestService = selectedServicesData.reduce((longest, current) => current.duration > longest.duration ? current : longest);
       const currentTotalDuration = longestService?.duration || 30;
 
-      // Buscar agendamentos existentes
       const { data: existingAppointments, error: appointmentsError } = await supabase
         .from('bookings')
         .select('start_time, end_time')
         .eq('barber_id', barberId)
         .eq('date', dateStr);
+      if (appointmentsError) return false;
 
-      if (appointmentsError) {
-        return false;
-      }
-
-      // Gerar horários disponíveis
       const availableSlots: string[] = [];
       const interval = 15;
-
       const startTime = barberSchedule.start_time;
       const endTime = barberSchedule.end_time;
-      
       const [startHour, startMinute] = startTime.split(':').map(Number);
       const [endHour, endMinute] = endTime.split(':').map(Number);
-      
       const startMinutes = startHour * 60 + startMinute;
       const endMinutes = endHour * 60 + endMinute;
 
-      // Gerar slots e verificar disponibilidade
       for (let currentMinutes = startMinutes; currentMinutes + currentTotalDuration <= endMinutes; currentMinutes += interval) {
         const hour = Math.floor(currentMinutes / 60);
         const minute = currentMinutes % 60;
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         
-        // Verificar se há conflito com agendamentos existentes
         const hasConflict = existingAppointments?.some(appointment => {
           const appointmentStart = appointment.start_time;
           const appointmentEnd = appointment.end_time;
-          
           const slotStart = timeString;
           const slotEnd = addMinutes(timeString, currentTotalDuration);
-          
           return (
             (slotStart >= appointmentStart && slotStart < appointmentEnd) ||
             (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
@@ -489,14 +308,8 @@ export default function Booking() {
           );
         });
 
-        // Verificar se não é um horário passado (se for hoje)
         const now = new Date();
-        const today = [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, '0'),
-          String(now.getDate()).padStart(2, '0'),
-        ].join('-');
-        
+        const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
         let isPastTime = false;
         if (dateStr === today) {
           const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -504,8 +317,6 @@ export default function Booking() {
           const currentTotalMinutes = currentHour * 60 + currentMinute;
           const [slotHour, slotMinute] = timeString.split(':').map(Number);
           const slotTotalMinutes = slotHour * 60 + slotMinute;
-          
-          // Horário deve ser maior que o horário atual + 30 minutos
           isPastTime = slotTotalMinutes <= (currentTotalMinutes + 30);
         }
         
@@ -532,42 +343,34 @@ export default function Booking() {
     }
 
     const now = new Date();
-    const today = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-    ].join('-');
+    const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
 
     for (let d = 1; d <= lastDay.getDate(); d++) {
-      const dateStr = [
-        month.getFullYear(),
-        String(month.getMonth() + 1).padStart(2, '0'),
-        String(d).padStart(2, '0'),
-      ].join('-');
+      const dateStr = [month.getFullYear(), String(month.getMonth() + 1).padStart(2, '0'), String(d).padStart(2, '0')].join('-');
       const isTodayOrFuture = dateStr >= today;
       const dayOfWeek = new Date(month.getFullYear(), month.getMonth(), d).getDay();
-      
       let available = false;
       
       if (selectedBarber && selectedServices.length > 0) {
-        // Usar disponibilidade calculada dinamicamente
         available = dayAvailability[dateStr] ?? false;
       } else if (selectedBarber && selectedServices.length === 0) {
-        // Se há barbeiro mas não há serviços, verificar apenas se ele trabalha neste dia
         if (isTodayOrFuture) {
-          if (selectedBarber === '9fba1488-e030-45a5-bba4-4146db9b6a22') { // Kinho
-            available = true; // trabalha todos os dias
-          } else if (selectedBarber === 'f163d69e-b874-4c19-8868-9ce96e6c83f7') { // Ligeiro
-            available = [1, 2, 3, 4, 5, 6].includes(dayOfWeek); // segunda a sábado
-          } else if (selectedBarber === 'db2a5a33-effb-471d-8eb1-ce59b787a951') { // Matheus
-            available = [1, 2, 3, 4, 5].includes(dayOfWeek); // segunda a sexta
+          if (selectedBarber === '9fba1488-e030-45a5-bba4-4146db9b6a22') {
+            available = true;
+          } else if (selectedBarber === 'f163d69e-b874-4c19-8868-9ce96e6c83f7') {
+            available = [1, 2, 3, 4, 5, 6].includes(dayOfWeek);
+          } else if (selectedBarber === 'db2a5a33-effb-471d-8eb1-ce59b787a951') {
+            available = [1, 2, 3, 4, 5].includes(dayOfWeek);
           } else {
-            available = [1, 2, 3, 4, 5, 6].includes(dayOfWeek); // padrão: segunda a sábado
+            available = [1, 2, 3, 4, 5, 6].includes(dayOfWeek);
           }
         }
       } else if (!selectedBarber) {
-        // Se não há barbeiro selecionado, mostrar todos os dias úteis
-        available = isTodayOrFuture && [1, 2, 3, 4, 5, 6].includes(dayOfWeek); // segunda a sábado
+        available = isTodayOrFuture && [1, 2, 3, 4, 5, 6].includes(dayOfWeek);
+      }
+      
+      if (selectedBarber && selectedServices.length > 0 && Object.keys(dayAvailability).length === 0) {
+        available = false;
       }
       
       calendar.push({ date: dateStr, available });
@@ -585,11 +388,7 @@ export default function Booking() {
   const formatDate = (dateString: string) => {
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('pt-BR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   const addMinutes = (time: string, minutes: number): string => {
@@ -600,12 +399,10 @@ export default function Booking() {
     return `${newH.toString().padStart(2, '0')}:${newM.toString().padStart(2, '0')}`;
   };
 
-  // Calcular variáveis derivadas
+  // Derivados
   const selectedServicesData = services.filter((s) => selectedServices.includes(s.id));
   const longestService = selectedServicesData.length > 0 
-    ? selectedServicesData.reduce((longest, current) => 
-        current.duration > longest.duration ? current : longest
-      )
+    ? selectedServicesData.reduce((longest, current) => current.duration > longest.duration ? current : longest)
     : null;
   const totalDuration = longestService?.duration || 0;
   const totalPrice = selectedServicesData.reduce((sum, s) => sum + s.price, 0);
@@ -614,36 +411,22 @@ export default function Booking() {
   const handleMarkBooking = () => {
     if (!isFormValid) {
       let errorMessage = 'Preencha todos os campos obrigatórios para continuar.';
-      
-      if (selectedServices.length === 0) {
-        errorMessage = 'Selecione pelo menos um serviço.';
-      } else if (!selectedBarber) {
-        errorMessage = 'Selecione um barbeiro.';
-      } else if (!selectedDate) {
-        errorMessage = 'Selecione uma data.';
-      } else if (!selectedTime) {
-        errorMessage = 'Selecione um horário.';
-      } else if (!bookingData.clientName) {
-        errorMessage = 'Informe seu nome completo.';
-      } else if (!bookingData.phone) {
-        errorMessage = 'Informe seu número de telefone.';
-      }
-      
-      toast({
-        title: 'Campos obrigatórios',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      if (selectedServices.length === 0) errorMessage = 'Selecione pelo menos um serviço.';
+      else if (!selectedBarber) errorMessage = 'Selecione um barbeiro.';
+      else if (!selectedDate) errorMessage = 'Selecione uma data.';
+      else if (!selectedTime) errorMessage = 'Selecione um horário.';
+      else if (!bookingData.clientName) errorMessage = 'Informe seu nome completo.';
+      else if (!bookingData.phone) errorMessage = 'Informe seu número de telefone.';
+      toast({ title: 'Campos obrigatórios', description: errorMessage, variant: 'destructive' });
       return;
     }
-
     setShowConfirmation(true);
   };
 
   const handleBooking = async () => {
     setIsSaving(true);
     try {
-      const duration = totalDuration; // Usar duração do serviço mais longo
+      const duration = totalDuration; // usar serviço mais longo
       const endTime = addMinutes(selectedTime, duration);
       const dateSP = selectedDate;
 
@@ -680,84 +463,120 @@ export default function Booking() {
         id: data && data[0] ? data[0].id : undefined,
       });
 
+      // reset
       setSelectedServices([]);
       setSelectedBarber(null);
       setSelectedDate('');
       setSelectedTime('');
       setShowConfirmation(false);
-      setBookingData({
-        clientName: '',
-        service: '',
-        barberId: '',
-        date: '',
-        time: '',
-        phone: '',
-        notes: '',
-      });
+      setBookingData({ clientName: '', service: '', barberId: '', date: '', time: '', phone: '', notes: '' });
+      setCurrentStep(1);
     } catch (error) {
       console.error('Erro ao agendar:', error);
-      toast({
-        title: 'Erro',
-        description: 'Falha ao agendar. Tente novamente.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: 'Falha ao agendar. Tente novamente.', variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleCancelConfirmation = () => {
-    setShowConfirmation(false);
+  const handleCancelConfirmation = () => setShowConfirmation(false);
+
+  const isFormValid = selectedServices.length > 0 && selectedBarber !== null && selectedDate && selectedTime && bookingData.clientName && bookingData.phone;
+
+  // Stepper (mantido)
+  const getStepperSteps = () => [
+    { id: 'services', title: 'Serviços', description: 'Escolha os serviços', completed: selectedServices.length > 0, current: currentStep === 1 },
+    { id: 'barber', title: 'Barbeiro', description: 'Selecione o profissional', completed: selectedBarber !== null, current: currentStep === 2 },
+    { id: 'datetime', title: 'Data/Hora', description: 'Escolha o horário', completed: Boolean(selectedDate && selectedTime), current: currentStep === 3 },
+    { id: 'client', title: 'Dados', description: 'Informações pessoais', completed: Boolean(bookingData.clientName && bookingData.phone), current: currentStep === 4 },
+    { id: 'confirm', title: 'Confirmar', description: 'Revisar e confirmar', completed: false, current: currentStep === 5 },
+  ];
+
+  // Scroll suave ao mudar de etapa
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
+  // Navegação entre etapas com limpeza do que vem depois
+  const goToStep = (step: number) => {
+    console.log('goToStep called with:', step, 'current step:', currentStep);
+    
+    // Limpar dados baseado no step de destino
+    if (step <= 2) {
+      // Se voltando para serviços ou barbeiro, limpa tudo que vem depois
+      setSelectedDate('');
+      setSelectedTime('');
+      setBookingData((prev) => ({ ...prev, clientName: '', phone: '' }));
+    }
+    if (step <= 1) {
+      // Se voltando para serviços, limpa também o barbeiro
+      setSelectedBarber(null);
+    }
+    if (step <= 3) {
+      // Se voltando para data/hora, limpa dados do cliente
+      setBookingData((prev) => ({ ...prev, clientName: '', phone: '' }));
+    }
+    
+    // Definir o step atual
+    setCurrentStep(step);
+    console.log('Step changed to:', step);
   };
 
-  const isFormValid = selectedServices.length > 0 && 
-    selectedBarber !== null && 
-    selectedDate && 
-    selectedTime && 
-    bookingData.clientName && 
-    bookingData.phone;
+  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
 
 
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  };
-
-  // Se houver erro, mostrar tela de erro
-  if (hasError) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Erro na Página de Agendamento</h1>
-          <p className="text-gray-600 mb-4">Ocorreu um erro ao carregar a página. Verifique o console para mais detalhes.</p>
-          <Button onClick={() => window.location.reload()}>
-            Recarregar Página
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
       <Helmet>
         <title>Agendar Corte e Barba | Barbearia Premium São Paulo</title>
-        <meta
-          name="description"
-          content="Agende seu horário na Barbearia Premium em São Paulo. Corte masculino, barba, atendimento personalizado e agendamento online fácil e rápido."
-        />
-        <meta
-          name="keywords"
-          content="agendar barbearia, corte masculino, barba, barbearia São Paulo, agendamento online, barbeiro profissional"
-        />
+        <meta name="description" content="Agende seu horário na Barbearia Premium em São Paulo. Corte masculino, barba, atendimento personalizado e agendamento online fácil e rápido." />
+        <meta name="keywords" content="agendar barbearia, corte masculino, barba, barbearia São Paulo, agendamento online, barbeiro profissional" />
         <link rel="canonical" href="https://www.seusite.com.br/agendamento" />
       </Helmet>
-      <div className="min-h-screen bg-background">
+
+      <div className="min-h-screen bg-background-light">
         <Header />
+
+        {/* Dialog de confirmação */}
+        <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Agendamento</DialogTitle>
+              <DialogDescription>
+                Confirme os dados do seu agendamento antes de finalizar.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-2">Resumo do Agendamento:</h4>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <p><span className="font-medium">Serviços:</span> {selectedServicesData.map(s => s.type).join(', ')}</p>
+                  <p><span className="font-medium">Barbeiro:</span> {selectedBarberData?.name}</p>
+                  <p><span className="font-medium">Data:</span> {formatDate(selectedDate)}</p>
+                  <p><span className="font-medium">Horário:</span> {selectedTime}</p>
+                  <p><span className="font-medium">Cliente:</span> {bookingData.clientName}</p>
+                  <p><span className="font-medium">Telefone:</span> {bookingData.phone}</p>
+                  {bookingData.notes && <p><span className="font-medium">Observações:</span> {bookingData.notes}</p>}
+                  <p className="pt-2 border-t border-gray-200">
+                    <span className="font-bold text-lg">Total: R$ {totalPrice}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={handleCancelConfirmation}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleBooking} disabled={isSaving} className="min-w-[140px]">
+                  {isSaving ? 'Salvando...' : 'Confirmar'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de comprovante */}
         <Dialog open={!!lastBooking} onOpenChange={(open) => !open && setLastBooking(null)}>
           <DialogContent>
             <DialogHeader>
@@ -798,12 +617,44 @@ export default function Booking() {
           </DialogContent>
         </Dialog>
 
-        <div className="pt-24 pb-12">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="pt-20 sm:pt-24 pb-8 sm:pb-12">
+          <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
             <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold text-gray-900 mb-4">Agende seu Horário</h1>
-                <p className="text-xl text-gray-600">Selecione o serviço, barbeiro, data e horário que preferir</p>
+              <div className="text-center mb-6 sm:mb-8 lg:mb-12 px-4">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-main mb-2 sm:mb-3 lg:mb-4">Agende seu Horário</h1>
+                <p className="text-sm sm:text-base lg:text-xl text-text-muted">Siga as etapas para agendar seu horário de forma simples e rápida</p>
+              </div>
+
+              {/* Stepper responsivo */}
+              <div className="mb-4 sm:mb-6 lg:mb-8">
+                <div className="flex items-center justify-center space-x-1 sm:space-x-2 lg:space-x-3 mb-4 sm:mb-6 overflow-x-auto px-2 sm:px-4">
+                  {getStepperSteps().map((step, index) => (
+                    <div key={step.id} className="flex items-center flex-shrink-0">
+                      <div className={`w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm lg:text-base font-medium ${
+                        step.completed 
+                          ? 'bg-green-500 text-white' 
+                          : step.current 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-gray-200 text-gray-500'
+                      }`}>
+                        {step.completed ? '✓' : index + 1}
+                      </div>
+                      {index < getStepperSteps().length - 1 && (
+                        <div className={`w-6 sm:w-8 lg:w-16 h-1 mx-1 sm:mx-2 lg:mx-3 ${
+                          step.completed ? 'bg-green-500' : 'bg-gray-200'
+                        }`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-center px-2 sm:px-4">
+                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-text-main">
+                    {getStepperSteps().find(s => s.current)?.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm lg:text-base text-text-muted">
+                    {getStepperSteps().find(s => s.current)?.description}
+                  </p>
+                </div>
               </div>
 
               {isLoading && (
@@ -814,89 +665,81 @@ export default function Booking() {
               )}
 
               {!isLoading && (
-                <>
-                  {(barbers.length === 0 || services.length === 0) && (
-                    <div className="text-center py-12">
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-                        <h3 className="text-lg font-semibold text-red-800 mb-2">Sistema em Manutenção</h3>
-                        <p className="text-red-700 mb-4">
-                          {barbers.length === 0 && services.length === 0 
-                            ? 'Não há barbeiros ou serviços cadastrados no sistema.'
-                            : barbers.length === 0 
-                            ? 'Não há barbeiros cadastrados no sistema.'
-                            : 'Não há serviços cadastrados no sistema.'
-                          }
-                        </p>
-                        <p className="text-sm text-red-600">
-                          Entre em contato com o administrador para resolver este problema.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {barbers.length > 0 && services.length > 0 && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="lg:col-span-2 space-y-8">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center text-xl font-semibold">
-                              <CheckCircle className="h-5 w-5 text-primary mr-2" />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                  {/* COLUNA ESQUERDA: conteúdo da etapa atual */}
+                  <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+
+
+                    <div>
+                      {currentStep === 1 && (
+                        <div key="step-1">
+                        <Card className="bg-card-bg border-0 shadow-lg">
+                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
+                            <CardTitle className="flex items-center text-xl font-semibold text-text-main">
+                              <Scissors className="h-5 w-5 text-secondary-gold mr-2" />
                               Selecione os Serviços
                             </CardTitle>
-                            <p className="text-sm text-gray-600 mt-2">
-                              Você pode selecionar múltiplos serviços para o mesmo agendamento
-                            </p>
+                              <p className="text-sm text-text-muted mt-2">Você pode selecionar múltiplos serviços para o mesmo agendamento</p>
                           </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <CardContent className="p-4 sm:p-6">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                               {services.map((service) => (
                                 <Button
                                   key={service.id}
-                                  variant={selectedServices.includes(service.id) ? 'default' : 'outline'}
+                                  variant="outline"
                                   className={cn(
-                                    'flex flex-col items-start p-4 text-left h-auto transition-all duration-200',
+                                    'flex flex-col items-start p-4 text-left h-auto transition-all duration-200 border-2',
                                     selectedServices.includes(service.id)
-                                      ? 'bg-primary text-primary-foreground'
-                                      : 'hover:bg-gray-50'
+                                        ? 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg'
+                                      : 'bg-white text-text-main border-gray-200 hover:border-secondary-gold hover:bg-secondary-gold/5 hover:text-text-main hover:shadow-md'
                                   )}
                                   onClick={() => {
-                                    setSelectedServices((prev) =>
-                                      prev.includes(service.id)
-                                        ? prev.filter((id) => id !== service.id)
-                                        : [...prev, service.id]
-                                    );
+                                      setSelectedServices((prev) => prev.includes(service.id) ? prev.filter((id) => id !== service.id) : [...prev, service.id]);
                                   }}
                                   aria-label={`Selecionar ${service.type}`}
                                 >
-                                  <span className="font-medium">{service.type}</span>
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    <span>{service.duration} min</span>
-                                    <span className="mx-2">•</span>
-                                    <span className="font-semibold">R$ {service.price}</span>
+                                  <span className="font-semibold text-lg">{service.type}</span>
+                                  <div className="text-sm mt-2 opacity-80">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-700 mr-2">{service.duration} min</span>
+                                      <span className="font-bold text-lg text-secondary-gold">R$ {service.price}</span>
                                   </div>
                                 </Button>
                               ))}
                             </div>
                           </CardContent>
+                            <div className="mt-4 sm:mt-6 flex justify-end px-4 sm:px-6 pb-4 sm:pb-6">
+                              <Button 
+                                onClick={() => setCurrentStep(2)}
+                                disabled={selectedServices.length === 0}
+                                className="min-w-[140px] sm:min-w-[180px]"
+                              >
+                                Continuar
+                              </Button>
+                            </div>
                         </Card>
+                        </div>
+                      )}
 
-                        {selectedServices.length > 0 && (
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="flex items-center text-xl font-semibold">
-                                <User className="h-5 w-5 text-primary mr-2" />
+                      {currentStep === 2 && (
+                        <div key="step-2">
+                          <Card className="bg-card-bg border-0 shadow-lg">
+                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
+                              <CardTitle className="flex items-center text-xl font-semibold text-text-main">
+                                <User className="h-5 w-5 text-success-soft mr-2" />
                                 Selecione o Barbeiro
                               </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                              <div className="space-y-4">
+                            <CardContent className="p-4 sm:p-6">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                 {barbers.map((barber) => (
                                   <Button
                                     key={barber.id}
-                                    variant={selectedBarber === barber.id ? 'default' : 'outline'}
+                                    variant="outline"
                                     className={cn(
-                                      'w-full flex justify-between items-center p-4 transition-all duration-200',
-                                      selectedBarber === barber.id ? 'bg-primary text-primary-foreground' : 'hover:bg-gray-50'
+                                      'w-full flex flex-col items-center p-6 transition-all duration-200 border-2 h-auto',
+                                      selectedBarber === barber.id 
+                                        ? 'bg-success-soft text-white border-success-soft shadow-lg transform scale-105' 
+                                        : 'bg-white text-text-main border-gray-200 hover:border-success-soft hover:bg-success-soft/5 hover:text-text-main hover:shadow-md'
                                     )}
                                     onClick={() => {
                                       setSelectedBarber(barber.id);
@@ -904,66 +747,94 @@ export default function Booking() {
                                     }}
                                     aria-label={`Selecionar barbeiro ${barber.name}`}
                                   >
-                                    <span>{barber.name}</span>
-                                    {barber.specialty && (
-                                      <span className="text-sm text-gray-600">{barber.specialty}</span>
-                                    )}
+                                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-3">
+                                      <User className="w-8 h-8 text-gray-600" />
+                                    </div>
+                                    <span className="font-semibold text-lg mb-1">{barber.name}</span>
+                                    {barber.specialty && <span className="text-sm opacity-80">{barber.specialty}</span>}
                                   </Button>
                                 ))}
                               </div>
                             </CardContent>
+                            <div className="mt-4 sm:mt-6 flex justify-end px-4 sm:px-6 pb-4 sm:pb-6">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => goToStep(1)}
+                                className="mr-2 sm:mr-3"
+                              >
+                                Voltar
+                              </Button>
+                              <Button 
+                                onClick={() => setCurrentStep(3)}
+                                disabled={!selectedBarber}
+                                className="min-w-[140px] sm:min-w-[180px]"
+                              >
+                                Continuar
+                              </Button>
+                            </div>
                           </Card>
+                        </div>
                         )}
 
-                        {selectedBarber !== null && (
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="flex items-center text-xl font-semibold">
-                                <Calendar className="h-5 w-5 text-primary mr-2" />
-                                Selecione a Data
+                      {currentStep === 3 && (
+                        <div key="step-3">
+                          <Card className="bg-card-bg border-0 shadow-lg">
+                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
+                              <CardTitle className="flex items-center text-xl font-semibold text-text-main">
+                                <Calendar className="h-5 w-5 text-primary-petroleum mr-2" />
+                                Selecione a Data e o Horário
                               </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                              <div className="flex justify-between items-center mb-4">
+                            <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                              {/* Disponibilidade do mês - carrega automaticamente */}
+                              {Object.keys(dayAvailability).length === 0 ? (
+                                <div className="text-center py-8">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-petroleum mx-auto mb-4"></div>
+                                  <p className="text-sm text-text-muted">
+                                    {isLoadingDayAvailability 
+                                      ? 'Verificando dias disponíveis...' 
+                                      : 'Selecione um barbeiro e serviços para ver os dias disponíveis'
+                                    }
+                                  </p>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex justify-between items-center">
                                 <Button
                                   variant="ghost"
                                   onClick={prevMonth}
-                                  disabled={
-                                    currentMonth.getMonth() === new Date().getMonth() &&
-                                    currentMonth.getFullYear() === new Date().getFullYear()
-                                  }
+                                      disabled={currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear()}
+                                  className="hover:bg-blue-50 text-primary-petroleum"
                                   aria-label="Mês anterior"
                                 >
                                   <ChevronLeft className="h-5 w-5" />
                                 </Button>
-                                <span className="text-lg font-medium capitalize">
+                                    <span className="text-lg sm:text-xl font-semibold capitalize text-primary-petroleum">
                                   {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
                                 </span>
-                                <Button variant="ghost" onClick={nextMonth} aria-label="Próximo mês">
+                                    <Button variant="ghost" onClick={nextMonth} className="hover:bg-blue-50 text-primary-petroleum" aria-label="Próximo mês">
                                   <ChevronRight className="h-5 w-5" />
                                 </Button>
                               </div>
-                              <div className="grid grid-cols-7 gap-1 mb-2">
+                              
+                                  <div className="grid grid-cols-7 gap-2">
                                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-                                  <div key={day} className="text-center text-sm font-medium text-gray-600">
-                                    {day}
-                                  </div>
+                                      <div key={day} className="text-center text-xs sm:text-sm font-semibold text-text-muted py-2">{day}</div>
                                 ))}
                               </div>
-                              <div className="grid grid-cols-7 gap-1">
+                              <div className="grid grid-cols-7 gap-2">
                                 {getCalendarDays(currentMonth).map((item, i) => (
                                   <Button
                                     key={i}
-                                    variant={selectedDate === item.date ? 'default' : 'outline'}
+                                    variant="outline"
                                     disabled={!item.date || !item.available}
                                     onClick={() => item.date && setSelectedDate(item.date)}
                                     className={cn(
-                                      'h-10 rounded-md transition-all duration-200',
+                                          'h-10 sm:h-12 rounded-lg transition-all duration-200 border-2',
                                       !item.date && 'invisible',
-                                      !item.available && 'opacity-50 cursor-not-allowed',
-                                      selectedDate === item.date
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'hover:bg-primary/10'
+                                          !item.available && 'bg-white text-black border-gray-200 cursor-not-allowed',
+                                          item.available && 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:border-green-400',
+                                          selectedDate === item.date ? 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg transform scale-105' : ''
                                     )}
                                     aria-label={item.date ? `Selecionar ${item.date}` : ''}
                                   >
@@ -971,39 +842,34 @@ export default function Booking() {
                                   </Button>
                                 ))}
                               </div>
-                            </CardContent>
-                          </Card>
+                                </>
                         )}
 
+                              {/* Horários dentro da mesma etapa - só aparece quando uma data for selecionada */}
                         {selectedDate && (
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="flex items-center text-xl font-semibold">
-                                <Clock className="h-5 w-5 text-primary mr-2" />
-                                Horários Disponíveis
-                                {isLoadingAvailability && (
-                                  <span className="ml-2 text-sm text-gray-500">Carregando...</span>
-                                )}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                <div className="pt-3 sm:pt-4">
+                                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-5 w-5 text-green-600" />
+                                      <h3 className="text-base sm:text-lg font-semibold text-green-800">Horários Disponíveis</h3>
+                                    </div>
+                                    {isLoadingAvailability && <span className="text-sm text-text-muted">Carregando...</span>}
+                                  </div>
+                                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                                 {isLoadingAvailability ? (
                                   <div className="col-span-full text-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                                    <p className="text-gray-500">Carregando horários disponíveis...</p>
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                                    <p className="text-text-muted">Carregando horários disponíveis...</p>
                                   </div>
                                 ) : availableTimes.length > 0 ? (
                                   availableTimes.map((time) => (
                                     <Button
                                       key={time}
-                                      variant={selectedTime === time ? 'default' : 'outline'}
+                                      variant="outline"
                                       onClick={() => setSelectedTime(time)}
                                       className={cn(
-                                        'p-3 rounded-lg transition-all duration-200',
-                                        selectedTime === time
-                                          ? 'bg-primary text-primary-foreground'
-                                          : 'hover:bg-primary/10'
+                                            'p-2 sm:p-3 md:p-4 rounded-lg transition-all duration-200 border-2 text-sm sm:text-base md:text-lg font-semibold min-h-[44px]',
+                                            selectedTime === time ? 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg' : 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:border-green-400'
                                       )}
                                       aria-label={`Selecionar horário ${time}`}
                                     >
@@ -1011,156 +877,182 @@ export default function Booking() {
                                     </Button>
                                   ))
                                 ) : (
-                                  <div className="col-span-full text-center py-8 text-gray-500">
-                                    <p>Nenhum horário disponível para esta data</p>
-                                    <p className="text-sm mt-2">
-                                      Tente selecionar outra data ou entre em contato conosco.
+                                      <div className="col-span-full text-center py-6 text-text-muted">
+                                        <p className="text-sm sm:text-base">
+                                          Nenhum horário disponível para esta data. Tente selecionar outra data.
                                     </p>
-
                                   </div>
                                 )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Botões de navegação */}
+                              <div className="mt-4 sm:mt-6 flex justify-end gap-2 sm:gap-3">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => goToStep(2)}
+                                >
+                                  Voltar
+                                </Button>
+                                                                  <Button
+                                    disabled={!selectedDate || !selectedTime}
+                                    onClick={() => setCurrentStep(4)}
+                                    className="min-w-[140px] sm:min-w-[180px]"
+                                  >
+                                    Continuar
+                                  </Button>
                               </div>
                             </CardContent>
                           </Card>
+                        </div>
                         )}
 
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center text-xl font-semibold">
-                              <Phone className="h-5 w-5 text-primary mr-2" />
-                              Dados do Cliente
+                      {currentStep === 4 && (
+                        <div key="step-4">
+                        <Card className="bg-card-bg border-0 shadow-lg">
+                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
+                            <CardTitle className="flex items-center text-xl font-semibold text-text-main">
+                              <Phone className="h-5 w-5 text-orange-600 mr-2" />
+                                Identificação do Cliente
                             </CardTitle>
+                              <p className="text-sm text-text-muted mt-2">Informe seus dados para finalizar o agendamento</p>
                           </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
+                            <CardContent className="p-4 sm:p-6">
+                              <div className="space-y-4 sm:space-y-6">
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Nome Completo *
-                                </label>
+                                  <label className="block text-sm font-semibold text-text-main mb-2">Nome Completo *</label>
                                 <Input
                                   placeholder="Seu nome completo"
                                   value={bookingData.clientName}
                                   onChange={(e) => setBookingData({ ...bookingData, clientName: e.target.value })}
+                                    className="h-12 text-lg border-2 bg-white text-black focus:border-primary-petroleum focus:ring-2 focus:ring-primary-petroleum/20"
                                   required
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Número de Telefone *
-                                </label>
+                                  <label className="block text-sm font-semibold text-text-main mb-2">Número de Telefone *</label>
                                 <Input
                                   placeholder="(11) 99999-9999"
                                   value={bookingData.phone}
                                   onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
+                                    className="h-12 text-lg border-2 bg-white text-black focus:border-primary-petroleum focus:ring-2 focus:ring-primary-petroleum/20"
                                   required
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                                  <MessageSquare className="h-4 w-4 mr-1" />
+                                  <label className="block text-sm font-semibold text-text-main mb-2 flex items-center">
+                                  <MessageSquare className="h-4 w-4 mr-2 text-orange-600" />
                                   Observações (Opcional)
                                 </label>
                                 <Textarea
                                   placeholder="Alguma preferência ou observação especial..."
                                   value={bookingData.notes}
                                   onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
+                                    className="border-2 bg-white text-black focus:border-primary-petroleum focus:ring-2 focus:ring-primary-petroleum/20"
                                   rows={3}
                                 />
                               </div>
                             </div>
+                              <div className="mt-4 sm:mt-6 flex justify-end gap-2 sm:gap-3">
+                                <Button variant="outline" onClick={() => goToStep(3)}>Voltar</Button>
+                                <Button onClick={() => setCurrentStep(5)} disabled={!bookingData.clientName || !bookingData.phone} className="min-w-[140px] sm:min-w-[180px]">Continuar</Button>
+                            </div>
                           </CardContent>
                         </Card>
                       </div>
+                      )}
 
-                      <div className="space-y-6">
-                        <Card className="sticky top-24">
-                          <CardHeader>
-                            <CardTitle className="text-xl font-semibold">Resumo do Agendamento</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className="p-4 bg-gray-100 rounded-lg">
-                                <p className="text-sm text-gray-600 mb-1">Cliente:</p>
-                                <p className="font-semibold">{bookingData.clientName || 'Não informado'}</p>
-                              </div>
-                              {selectedServicesData.length > 0 && (
-                                <div className="p-4 bg-primary/10 rounded-lg">
-                                  <p className="text-sm text-gray-600 mb-1">Serviços:</p>
-                                  <ul>
-                                    {selectedServicesData.map((s) => (
-                                      <li key={s.id}>{s.type}</li>
-                                    ))}
-                                  </ul>
+                      {currentStep === 5 && (
+                        <div key="step-5">
+                          <Card className="bg-card-bg border-0 shadow-lg">
+                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
+                              <CardTitle className="flex items-center text-xl font-semibold text-text-main">
+                                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                                Revise e Confirme
+                              </CardTitle>
+                              <p className="text-sm text-text-muted mt-2">Confira os dados no resumo e confirme o agendamento abaixo</p>
+                            </CardHeader>
+                            <CardContent className="p-4 sm:p-6 flex justify-end gap-2 sm:gap-3">
+                              <Button variant="outline" onClick={() => goToStep(4)}>Voltar</Button>
+                              <Button onClick={handleMarkBooking} disabled={!isFormValid} className="min-w-[160px] sm:min-w-[200px]">Confirmar Agendamento</Button>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* COLUNA DIREITA: Resumo permanente */}
+                  <div className="space-y-4 sm:space-y-6 order-first lg:order-last">
+                    <Card className="bg-card-bg border-0 shadow-lg">
+                      <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
+                        <CardTitle className="text-lg font-semibold text-gray-900">Resumo do Agendamento</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                        {selectedServicesData.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Serviços Selecionados:</h4>
+                            <div className="space-y-1 sm:space-y-2">
+                              {selectedServicesData.map((service) => (
+                                <div key={service.id} className="flex justify-between items-center text-sm">
+                                  <span className="text-gray-700">{service.type}</span>
+                                  <span className="font-semibold text-secondary-gold">R$ {service.price}</span>
                                 </div>
-                              )}
-                              {selectedBarber !== null && (
-                                <div className="p-4 bg-gray-100 rounded-lg">
-                                  <p className="text-sm text-gray-600 mb-1">Barbeiro:</p>
-                                  <p className="font-semibold">{selectedBarberData?.name}</p>
-                                </div>
-                              )}
-                              {selectedDate && selectedTime && (
-                                <div className="p-4 bg-green-50 rounded-lg">
-                                  <p className="text-sm text-gray-600 mb-1">Data e Hora:</p>
-                                  <p className="font-semibold capitalize">
-                                    {getDayName(selectedDate)}, {formatDate(selectedDate)}
-                                  </p>
-                                  <p className="text-sm text-gray-600">às {selectedTime}</p>
-                                </div>
-                              )}
-                              {selectedServicesData.length > 0 && (
-                                <div className="pt-4 border-t border-gray-200">
-                                  <div className="flex justify-between items-center text-lg font-semibold">
-                                    <span>Total:</span>
-                                    <span className="text-primary">R$ {totalPrice}</span>
-                                  </div>
-                                </div>
-                              )}
-                                                         </div>
-                             {!showConfirmation ? (
-                               <Button
-                                 className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                 size="lg"
-                                 onClick={handleMarkBooking}
-                                 disabled={!isFormValid}
-                               >
-                                 Marcar Agendamento
-                               </Button>
-                             ) : (
-                               <div className="mt-6 space-y-4">
-                                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                   <p className="text-center text-yellow-800 font-medium mb-4">
-                                     Deseja confirmar o agendamento?
-                                   </p>
-                                   <div className="flex gap-3">
-                                     <Button
-                                       className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                                       onClick={handleBooking}
-                                       disabled={isSaving}
-                                     >
-                                       {isSaving ? 'Salvando...' : 'Sim, Confirmar'}
-                                     </Button>
-                                     <Button
-                                       variant="outline"
-                                       className="flex-1"
-                                       onClick={handleCancelConfirmation}
-                                       disabled={isSaving}
-                                     >
-                                       Não, Voltar
-                                     </Button>
-                                   </div>
-                                 </div>
-                               </div>
-                             )}
-                             <p className="text-xs text-gray-600 text-center mt-4">
-                               Você receberá uma confirmação via WhatsApp
-                             </p>
-                          </CardContent>
-                        </Card>
+                              ))}
                       </div>
                     </div>
                   )}
-                </>
+                        
+                        {selectedBarberData && (
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Barbeiro:</h4>
+                            <p className="text-sm text-gray-700">{selectedBarberData.name}</p>
+                          </div>
+                        )}
+                        
+                        {selectedDate && selectedTime && (
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Data e Horário:</h4>
+                            <p className="text-sm text-gray-700">
+                              {formatDate(selectedDate)} às {selectedTime}
+                            </p>
+            </div>
+                        )}
+                        
+                        {bookingData.clientName && bookingData.phone && (
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">Dados Pessoais:</h4>
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Nome:</span> {bookingData.clientName}
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Telefone:</span> {bookingData.phone}
+                              </p>
+                              {bookingData.notes && (
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Observações:</span> {bookingData.notes}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {totalPrice > 0 && (
+                          <div className="pt-3 sm:pt-4 border-t border-gray-200">
+                            <div className="flex justify-between items-center text-base sm:text-lg font-bold text-gray-900">
+                              <span>Total:</span>
+                              <span className="text-secondary-gold">R$ {totalPrice}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
               )}
             </div>
           </div>

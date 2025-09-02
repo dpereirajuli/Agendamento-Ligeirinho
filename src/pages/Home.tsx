@@ -4,8 +4,9 @@ import { Scissors, Crown, Clock, Award, Users, Calendar, Star, MapPin, MessageCi
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { TestimonialCard } from '@/components/TestimonialCard';
-import heroImage from '@/assets/hero-barbershop.jpg';
+import { motion } from 'framer-motion';
+
+import heroImage from '/HeroSection.png';
 import sobreImage from '@/assets/sobre.jpg';
 import galeria1 from '@/assets/galeria.jpg';
 import galeria2 from '@/assets/galeria2.jpg';
@@ -54,26 +55,7 @@ export default function Home() {
     }
   ];
 
-  const testimonials = [
-    {
-      name: 'Carlos Silva',
-      rating: 5,
-      comment: 'Ambiente nota 10, barbeiros atenciosos e um corte impecável. Sempre saio satisfeito e com a autoestima renovada!',
-      location: 'São Paulo'
-    },
-    {
-      name: 'João Santos',
-      rating: 5,
-      comment: 'Virou minha barbearia de confiança. O atendimento é rápido, o agendamento facilita muito e o resultado é sempre top!',
-      location: 'Pirituba'
-    },
-    {
-      name: 'Pedro Costa',
-      rating: 5,
-      comment: 'Levei meu filho para cortar o cabelo e fomos super bem recebidos. Profissionais cuidadosos e ambiente familiar. Recomendo demais!',
-      location: 'Mangalot'
-    }
-  ];
+
 
   const galleryImages = [
     galeria1,
@@ -106,10 +88,8 @@ export default function Home() {
   const galeriaDescAnim = useInViewAnimation<HTMLParagraphElement>('animate-fade-in-up');
   const galeriaImgAnims = galleryImages.map((_, i) => useInViewAnimation<HTMLDivElement>('animate-scale-in'));
 
-  // TESTEMUNHOS
-  const depoTitleAnim = useInViewAnimation<HTMLHeadingElement>('animate-fade-in-up');
-  const depoDescAnim = useInViewAnimation<HTMLParagraphElement>('animate-fade-in-up');
-  const depoCardAnims = testimonials.map((_, i) => useInViewAnimation<HTMLDivElement>('animate-fade-in-up'));
+
+
 
   // CONTATO
   const contatoTitleAnim = useInViewAnimation<HTMLHeadingElement>('animate-fade-in-up');
@@ -129,35 +109,66 @@ export default function Home() {
       <div className="min-h-screen bg-white">
         <Header />
         
-        {/* Hero Section */}
-        <section className="relative h-screen flex items-center justify-center overflow-hidden">
+                           {/* Hero Section */}
+        <section className="relative h-screen flex items-center justify-between overflow-hidden"> 
+          {/* Fundo com gradiente personalizado */}
           <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ 
-              backgroundImage: `url(${heroImage})`,
-              backgroundAttachment: 'fixed'
+            className="absolute inset-0 z-0"
+            style={{
+              background: 'linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(3, 2, 0, 1) 25%, rgba(234, 94, 0, 1) 79%, rgba(255, 102, 0, 1) 100%)'
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/50 to-gray-900/80" />
-          
-          <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
-            <h1 ref={heroTitleAnim.ref} className={`text-4xl md:text-6xl font-bold text-white mb-6 font-playfair ${heroTitleAnim.className}`}>
+
+          {/* Conteúdo Texto - Esquerda */}
+          <motion.div
+            initial={{ x: -50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="relative z-10 text-left max-w-4xl ml-6 sm:ml-12 px-4"
+          >
+            <h1
+              ref={heroTitleAnim.ref}
+              className={`text-4xl md:text-6xl font-bold text-white mb-6 font-playfair ${heroTitleAnim.className}`}
+            >
               Tradição <span className="text-amber-500">Redefinida</span>
             </h1>
-            <p ref={heroDescAnim.ref} className={`text-xl text-gray-300 mb-12 max-w-2xl mx-auto ${heroDescAnim.className}`}>
-              Onde tradição e inovação se encontram para criar 
-              a experiência de barbearia perfeita. Agende seu momento de excelência.
+            <p
+              ref={heroDescAnim.ref}
+              className={`text-xl text-gray-200 mb-12 max-w-2xl ${heroDescAnim.className}`}
+            >
+              Onde tradição e inovação se encontram para criar a experiência de barbearia perfeita.
+              Agende seu momento de excelência.
             </p>
-            <div ref={heroBtnsAnim.ref} className={`flex flex-col sm:flex-row gap-6 justify-center ${heroBtnsAnim.className}`}>
-              <Button asChild size="lg" className="bg-transparent text-white border-2 border-double border-amber-500 hover:bg-amber-500/10">
-                <Link to="/agendamento">Agende Sua Experiência</Link>
-              </Button>
-              <Button asChild size="lg" className="bg-transparent text-white border-2 border-double border-amber-500 hover:bg-amber-500/10">
-                <Link to="#sobre-nos">Conheça Mais</Link>
+            <div
+              ref={heroBtnsAnim.ref}
+              className={`flex flex-col sm:flex-row gap-6 justify-start ${heroBtnsAnim.className}`}
+            >
+              <Button
+                asChild
+                size="lg"
+                className="bg-transparent text-white border-2 border-double border-amber-500 hover:bg-amber-500/10"
+              >
+                <Link to="/agendamento">Agendar agora</Link>
               </Button>
             </div>
-          </div>
+          </motion.div>
+
+          {/* Imagem do Homem no lado direito */}
+          <motion.div
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="relative z-5 flex items-end justify-end max-w-[50%] h-full"
+          >
+            <img
+              src={heroImage}
+              alt="Homem com braços cruzados"
+              className="object-contain h-full max-h-[90%]"
+            />
+          </motion.div>
         </section>
+
+
 
         {/* Promotional Cards Section */}
         <section id="destaques" className="py-24 bg-gray-900 text-white">
@@ -272,31 +283,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
-        <section className="py-24 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 ref={depoTitleAnim.ref} className={`text-4xl md:text-5xl font-bold text-gray-800 mb-6 ${depoTitleAnim.className}`}>
-                Depoimentos dos <span className="text-amber-500">Clientes</span>
-              </h2>
-              <p ref={depoDescAnim.ref} className={`text-xl text-gray-500 ${depoDescAnim.className}`}>
-                O que nossos clientes dizem sobre sua experiência
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, index) => (
-                <TestimonialCard 
-                  key={index} 
-                  {...testimonial} 
-                  className={depoCardAnims[index].className}
-                  ref={depoCardAnims[index].ref}
-                  style={{ animationDelay: `${index * 200}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
+
 
         {/* Contact Section */}
         <section id="contato" className="py-24 bg-gray-100">

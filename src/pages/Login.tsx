@@ -1,50 +1,58 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { User, Lock, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Lock, LogIn, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
 import { toast } from '@/hooks/use-toast';
 import { Helmet } from 'react-helmet-async';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { signIn, loading } = useAuth();
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    // Demo credentials
-    if (credentials.username === 'admin' && credentials.password === 'admin123') {
-      localStorage.setItem('user', JSON.stringify({ role: 'admin', name: 'Administrador' }));
+    try {
+      const { error } = await signIn(credentials.email, credentials.password);
+      
+      if (error) {
+        toast({
+          title: 'Erro no login',
+          description: error.message || 'Credenciais inválidas.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Login realizado com sucesso!',
+          description: 'Bem-vindo ao painel administrativo.'
+        });
+        navigate('/admin');
+      }
+    } catch (error) {
       toast({
-        title: 'Login realizado com sucesso!',
-        description: 'Bem-vindo ao painel administrativo.'
-      });
-      window.location.href = '/admin';
-    } else if (credentials.username === 'cliente' && credentials.password === 'cliente123') {
-      localStorage.setItem('user', JSON.stringify({ role: 'client', name: 'João Silva' }));
-      toast({
-        title: 'Login realizado com sucesso!',
-        description: 'Bem-vindo de volta!'
-      });
-      window.location.href = '/agendamento';
-    } else {
-      toast({
-        title: 'Credenciais inválidas',
-        description: 'Usuário ou senha incorretos.',
+        title: 'Erro inesperado',
+        description: 'Ocorreu um erro durante o login.',
         variant: 'destructive'
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDemoLogin = (type: 'admin' | 'client') => {
     if (type === 'admin') {
-      setCredentials({ username: 'admin', password: 'admin123' });
+      setCredentials({ email: 'admin@barbearia.com', password: 'admin123' });
     } else {
-      setCredentials({ username: 'cliente', password: 'cliente123' });
+      setCredentials({ email: 'cliente@barbearia.com', password: 'cliente123' });
     }
   };
 
@@ -77,15 +85,15 @@ export default function Login() {
                 <form onSubmit={handleLogin} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Nome de Usuário
+                      Email
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        type="text"
-                        placeholder="Seu nome de usuário"
-                        value={credentials.username}
-                        onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+                        type="email"
+                        placeholder="Seu email"
+                        value={credentials.email}
+                        onChange={(e) => setCredentials({...credentials, email: e.target.value})}
                         className="pl-10"
                         required
                       />
@@ -109,8 +117,8 @@ export default function Login() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full btn-premium">
-                    Entrar
+                  <Button type="submit" className="w-full btn-premium" disabled={isLoading}>
+                    {isLoading ? 'Entrando...' : 'Entrar'}
                   </Button>
                 </form>
 
@@ -123,7 +131,7 @@ export default function Login() {
                       className="w-full"
                       onClick={() => handleDemoLogin('admin')}
                     >
-                      Acesso Admin
+                      Acesso Admin (admin@barbearia.com)
                     </Button>
                     
                     <Button
@@ -131,7 +139,7 @@ export default function Login() {
                       className="w-full"
                       onClick={() => handleDemoLogin('client')}
                     >
-                      Acesso Cliente
+                      Acesso Cliente (cliente@barbearia.com)
                     </Button>
                   </div>
                 </div>

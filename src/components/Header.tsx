@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Scissors, Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,18 +14,8 @@ interface HeaderProps {
 
 export const Header = ({ isAuthenticated = false, userRole, onLogout }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const navigation = [
     { name: 'Sobre Nós', href: '/#sobre-nos' },
@@ -58,12 +48,7 @@ export const Header = ({ isAuthenticated = false, userRole, onLogout }: HeaderPr
 
   return (
     <header
-      className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        isScrolled 
-          ? 'bg-gray-900 text-white border-b border-gray-700 shadow-lg' 
-          : 'bg-transparent text-white'
-      )}
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-black text-white border-b border-gray-800 shadow-lg"
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 lg:h-20">
@@ -87,7 +72,7 @@ export const Header = ({ isAuthenticated = false, userRole, onLogout }: HeaderPr
                     onClick={e => handleSmoothScroll(e, id)}
                     className={cn(
                       'text-sm font-medium transition-colors hover:text-amber-500',
-                      location.hash === `#${id}` ? 'text-amber-500' : isScrolled ? 'text-gray-300' : 'text-white'
+                      location.hash === `#${id}` ? 'text-amber-500' : 'text-gray-300'
                     )}
                   >
                     {item.name}
@@ -100,7 +85,7 @@ export const Header = ({ isAuthenticated = false, userRole, onLogout }: HeaderPr
                   to={item.href}
                   className={cn(
                     'text-sm font-medium transition-colors hover:text-amber-500',
-                    location.pathname === item.href ? 'text-amber-500' : isScrolled ? 'text-gray-300' : 'text-white'
+                    location.pathname === item.href ? 'text-amber-500' : 'text-gray-300'
                   )}
                 >
                   {item.name}

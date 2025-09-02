@@ -63,6 +63,15 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
         },
+        // Nova paleta premium para barbearia
+        'primary-petroleum': '#1E3A5F',
+        'secondary-gold': '#D4AF37',
+        'background-light': '#F5F5F5',
+        'card-bg': '#FFFFFF',
+        'text-main': '#2E2E2E',
+        'text-muted': '#6B7280',
+        'danger-soft': '#E53935',
+        'success-soft': '#4CAF50',
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
