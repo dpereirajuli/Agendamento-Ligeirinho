@@ -75,6 +75,23 @@
     text-rendering: optimizeLegibility;
   }
   
+  /* Scroll suave para todos os elementos */
+  * {
+    scroll-behavior: smooth;
+  }
+  
+  /* Scroll suave específico para navegadores que não suportam CSS */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Fallback para navegadores antigos */
+  @supports not (scroll-behavior: smooth) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+  
   /* Otimizações para dispositivos móveis */
   @media (max-width: 768px) {
     * {

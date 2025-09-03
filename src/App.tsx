@@ -45,7 +45,7 @@ const App = () => (
 
 
 
-            <Route path="/entrar" element={
+            <Route path="/admin" element={
               <AuthProvider>
                 <Login />
               </AuthProvider>

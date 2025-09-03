@@ -6,38 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/Footer';
 import { motion } from 'framer-motion';
 
-
-import heroImage from '/HeroSection.png';
-import sobreImage from '@/assets/sobre.jpg';
-import galeria1 from '@/assets/galeria.jpg';
-import galeria2 from '@/assets/galeria2.jpg';
-import galeria3 from '@/assets/galeria3.jpg';
-import galeria5 from '@/assets/galeria5.jpg';
-import galeria6 from '@/assets/galeria6.jpg';
-import galeria7 from '@/assets/galeria7.jpg';
-import galeria8 from '@/assets/galeria8.jpg';
-import galeria9 from '@/assets/galeria9.jpg';
+import heroImage from '@/assets/hero-barbershop.webp';
+import sobreImage from '@/assets/sobre.webp';
+import galeria1 from '@/assets/galeria.webp';
+import galeria2 from '@/assets/galeria2.webp';
+import galeria3 from '@/assets/galeria3.webp';
+import galeria5 from '@/assets/galeria5.webp';
+import galeria6 from '@/assets/galeria6.webp';
+import galeria7 from '@/assets/galeria7.webp';
+import galeria8 from '@/assets/galeria8.webp';
+import galeria9 from '@/assets/galeria9.webp';
 import logo from '/logo2.webp';
 import { useInViewAnimation } from '@/hooks/useInViewAnimation';
 import { Helmet } from 'react-helmet-async';
-
-
 
 export default function Home() {
   const location = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 8; // Total de imagens na galeria
-
-  useEffect(() => {
-    if (location.state && location.state.scrollTo) {
-      const el = document.getElementById(location.state.scrollTo);
-      if (el) {
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
-    }
-  }, [location.state]);
 
   // Funções do carrossel
   const getSlidesPerView = () => {
@@ -107,9 +93,8 @@ export default function Home() {
         <meta name="keywords" content="barbearia, Ligeirinho Barbearia, corte masculino, barba, cabelo, agendamento online, barbeiro profissional, barbearia moderna, estilo, rapidez" />
         <link rel="canonical" href="https://www.ligeirinhobarbearia.com.br/" />
       </Helmet>
+      
       <div className="min-h-screen bg-white">
-  
-
         {/* Hero Section */}
         <section className="relative h-screen flex items-center justify-center overflow-hidden">
           {/* Fundo com imagem e efeito parallax */}
@@ -267,11 +252,13 @@ export default function Home() {
                 </div>
               </div>
               <div id="stats">
-                <span className='text-xl text-black font-bold text-center flex-1'>Agende seu horário</span>
+                <Link to="/agendamento">
+                  <button className='text-xl text-black font-bold text-center flex-1 hover:text-amber-600 transition-colors cursor-pointer'>
+                    Agende seu horário
+                  </button>
+                </Link>
               </div>
             </div>
-
-            
 
             {/* Bloco de informações de contato - responsivo com ícones */}
             <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 text-center">
@@ -489,9 +476,11 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  <Button asChild className="w-full mt-8 bg-amber-500 hover:bg-amber-600 text-white animate-scale-in">
-                    <Link to="/agendamento">Agende Agora</Link>
-                  </Button>
+                  <Link to="/agendamento">
+                    <Button className="w-full mt-8 bg-amber-500 hover:bg-amber-600 text-white animate-scale-in">
+                      Agende Agora
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -499,8 +488,6 @@ export default function Home() {
         </section>
 
         <Footer />
-
-
 
         {/* Botão flutuante do WhatsApp */}
         <button
@@ -535,7 +522,7 @@ export default function Home() {
             xmlns="http://www.w3.org/2000/svg"
           >
             <path
-              d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"
+              d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"
             ></path>
           </svg>
 

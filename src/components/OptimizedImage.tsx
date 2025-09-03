@@ -15,7 +15,7 @@ export function OptimizedImage({
   className = '', 
   loading = 'lazy',
   priority = false,
-  fallback = '/placeholder.jpg'
+  fallback = '/logo.webp'
 }: OptimizedImageProps) {
   const [imageSrc, setImageSrc] = useState(src);
   const [isLoaded, setIsLoaded] = useState(false);

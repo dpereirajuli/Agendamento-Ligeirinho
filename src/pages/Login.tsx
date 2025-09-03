@@ -72,7 +72,7 @@ export default function Login() {
                   </div>
                   <h1 className="text-2xl font-bold mb-2">Entrar na Conta</h1>
                   <p className="text-muted-foreground">
-                    Acesse sua conta para gerenciar agendamentos
+                    Area restrita para administradores
                   </p>
                 </div>
 
@@ -120,7 +120,6 @@ export default function Login() {
 
                 <div className="mt-6 text-center">
                   <p className="text-sm text-muted-foreground">
-                    Não tem uma conta?{' '}
                     <Link to="/" className="text-primary hover:underline">
                       Voltar ao início
                     </Link>
