@@ -3,7 +3,7 @@ import { Calendar, Clock, Phone, MessageSquare, User, ChevronLeft, ChevronRight,
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Header } from '@/components/Header';
+
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabaseClient';
@@ -11,6 +11,70 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Helmet } from 'react-helmet-async';
 
+// Componente personalizado para botão de voltar com animação
+function BackButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="bg-amber-50 text-center w-48 rounded-2xl h-14 relative text-black text-xl font-semibold border-4 border-amber-200 group"
+    >
+      <div
+        className="bg-amber-500 rounded-xl h-12 w-1/4 grid place-items-center absolute left-0 top-0 group-hover:w-full z-10 duration-500"
+      >
+        <svg
+          width="25px"
+          height="25px"
+          viewBox="0 0 1024 1024"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#000000"
+            d="M224 480h640a32 32 0 1 1 0 64H224a32 32 0 0 1 0-64z"
+          ></path>
+          <path
+            fill="#000000"
+            d="m237.248 512 265.408 265.344a32 32 0 0 1-45.312 45.312l-288-288a32 32 0 0 1 0-45.312l288-288a32 32 0 1 1 45.312 45.312L237.248 512z"
+          ></path>
+        </svg>
+      </div>
+      <p className="translate-x-4">{children}</p>
+    </button>
+  );
+}
+
+// Componente personalizado para botão de continuar com animação
+function ContinueButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="bg-green-50 text-center w-48 rounded-2xl h-14 relative text-black text-xl font-semibold border-4 border-green-200 group disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <div
+        className="bg-green-500 rounded-xl h-12 w-1/4 grid place-items-center absolute right-0 top-0 group-hover:w-full z-10 duration-500"
+      >
+        <svg
+          width="25px"
+          height="25px"
+          viewBox="0 0 1024 1024"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#000000"
+            d="M800 480h-640a32 32 0 1 0 0 64h640a32 32 0 0 0 0-64z"
+          ></path>
+          <path
+            fill="#000000"
+            d="m786.752 512-265.408 265.344a32 32 0 0 0 45.312 45.312l288-288a32 32 0 0 0 0-45.312l-288-288a32 32 0 1 0-45.312 45.312L786.752 512z"
+          ></path>
+        </svg>
+      </div>
+      <p className="translate-x-[-1rem]">{children}</p>
+    </button>
+  );
+}
 
 interface Barber {
   id: string;
@@ -70,7 +134,7 @@ export default function Booking() {
   const [services, setServices] = useState<Service[]>([]);
   const [lastBooking, setLastBooking] = useState<any | null>(null);
 
-  const [showConfirmation, setShowConfirmation] = useState(false);
+
   const [dayAvailability, setDayAvailability] = useState<Record<string, boolean>>({});
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -420,7 +484,8 @@ export default function Booking() {
       toast({ title: 'Campos obrigatórios', description: errorMessage, variant: 'destructive' });
       return;
     }
-    setShowConfirmation(true);
+    // Executa diretamente o agendamento sem mostrar confirmação
+    handleBooking();
   };
 
   const handleBooking = async () => {
@@ -468,7 +533,7 @@ export default function Booking() {
       setSelectedBarber(null);
       setSelectedDate('');
       setSelectedTime('');
-      setShowConfirmation(false);
+      
       setBookingData({ clientName: '', service: '', barberId: '', date: '', time: '', phone: '', notes: '' });
       setCurrentStep(1);
     } catch (error) {
@@ -479,7 +544,7 @@ export default function Booking() {
     }
   };
 
-  const handleCancelConfirmation = () => setShowConfirmation(false);
+
 
   const isFormValid = selectedServices.length > 0 && selectedBarber !== null && selectedDate && selectedTime && bookingData.clientName && bookingData.phone;
 
@@ -537,44 +602,9 @@ export default function Booking() {
       </Helmet>
 
       <div className="min-h-screen bg-background-light">
-        <Header />
+  
 
-        {/* Dialog de confirmação */}
-        <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirmar Agendamento</DialogTitle>
-              <DialogDescription>
-                Confirme os dados do seu agendamento antes de finalizar.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-2">Resumo do Agendamento:</h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p><span className="font-medium">Serviços:</span> {selectedServicesData.map(s => s.type).join(', ')}</p>
-                  <p><span className="font-medium">Barbeiro:</span> {selectedBarberData?.name}</p>
-                  <p><span className="font-medium">Data:</span> {formatDate(selectedDate)}</p>
-                  <p><span className="font-medium">Horário:</span> {selectedTime}</p>
-                  <p><span className="font-medium">Cliente:</span> {bookingData.clientName}</p>
-                  <p><span className="font-medium">Telefone:</span> {bookingData.phone}</p>
-                  {bookingData.notes && <p><span className="font-medium">Observações:</span> {bookingData.notes}</p>}
-                  <p className="pt-2 border-t border-gray-200">
-                    <span className="font-bold text-lg">Total: R$ {totalPrice}</span>
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={handleCancelConfirmation}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleBooking} disabled={isSaving} className="min-w-[140px]">
-                  {isSaving ? 'Salvando...' : 'Confirmar'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+
 
         {/* Dialog de comprovante */}
         <Dialog open={!!lastBooking} onOpenChange={(open) => !open && setLastBooking(null)}>
@@ -707,15 +737,14 @@ export default function Booking() {
                               ))}
                             </div>
                           </CardContent>
-                            <div className="mt-4 sm:mt-6 flex justify-end px-4 sm:px-6 pb-4 sm:pb-6">
-                              <Button 
-                                onClick={() => setCurrentStep(2)}
-                                disabled={selectedServices.length === 0}
-                                className="min-w-[140px] sm:min-w-[180px]"
-                              >
-                                Continuar
-                              </Button>
-                            </div>
+                                                         <div className="mt-4 sm:mt-6 flex justify-end px-4 sm:px-6 pb-4 sm:pb-6">
+                               <ContinueButton 
+                                 onClick={() => setCurrentStep(2)}
+                                 disabled={selectedServices.length === 0}
+                               >
+                                 Continuar
+                               </ContinueButton>
+                             </div>
                         </Card>
                         </div>
                       )}
@@ -756,22 +785,17 @@ export default function Booking() {
                                 ))}
                               </div>
                             </CardContent>
-                            <div className="mt-4 sm:mt-6 flex justify-end px-4 sm:px-6 pb-4 sm:pb-6">
-                              <Button 
-                                variant="outline" 
-                                onClick={() => goToStep(1)}
-                                className="mr-2 sm:mr-3"
-                              >
-                                Voltar
-                              </Button>
-                              <Button 
-                                onClick={() => setCurrentStep(3)}
-                                disabled={!selectedBarber}
-                                className="min-w-[140px] sm:min-w-[180px]"
-                              >
-                                Continuar
-                              </Button>
-                            </div>
+                                                         <div className="mt-4 sm:mt-6 flex justify-between px-4 sm:px-6 pb-4 sm:pb-6">
+                               <BackButton onClick={() => goToStep(1)}>
+                                 Voltar
+                               </BackButton>
+                               <ContinueButton 
+                                 onClick={() => setCurrentStep(3)}
+                                 disabled={!selectedBarber}
+                               >
+                                 Continuar
+                               </ContinueButton>
+                             </div>
                           </Card>
                         </div>
                         )}
@@ -887,22 +911,18 @@ export default function Booking() {
                                 </div>
                               )}
 
-                              {/* Botões de navegação */}
-                              <div className="mt-4 sm:mt-6 flex justify-end gap-2 sm:gap-3">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => goToStep(2)}
-                                >
-                                  Voltar
-                                </Button>
-                                                                  <Button
-                                    disabled={!selectedDate || !selectedTime}
-                                    onClick={() => setCurrentStep(4)}
-                                    className="min-w-[140px] sm:min-w-[180px]"
-                                  >
-                                    Continuar
-                                  </Button>
-                              </div>
+                                                             {/* Botões de navegação */}
+                               <div className="mt-4 sm:mt-6 flex justify-between gap-2 sm:gap-3">
+                                 <BackButton onClick={() => goToStep(2)}>
+                                   Voltar
+                                 </BackButton>
+                                 <ContinueButton
+                                   disabled={!selectedDate || !selectedTime}
+                                   onClick={() => setCurrentStep(4)}
+                                 >
+                                   Continuar
+                                 </ContinueButton>
+                               </div>
                             </CardContent>
                           </Card>
                         </div>
@@ -954,10 +974,10 @@ export default function Booking() {
                                 />
                               </div>
                             </div>
-                              <div className="mt-4 sm:mt-6 flex justify-end gap-2 sm:gap-3">
-                                <Button variant="outline" onClick={() => goToStep(3)}>Voltar</Button>
-                                <Button onClick={() => setCurrentStep(5)} disabled={!bookingData.clientName || !bookingData.phone} className="min-w-[140px] sm:min-w-[180px]">Continuar</Button>
-                            </div>
+                                                             <div className="mt-4 sm:mt-6 flex justify-between gap-2 sm:gap-3">
+                                 <BackButton onClick={() => goToStep(3)}>Voltar</BackButton>
+                                 <ContinueButton onClick={() => setCurrentStep(5)} disabled={!bookingData.clientName || !bookingData.phone}>Continuar</ContinueButton>
+                             </div>
                           </CardContent>
                         </Card>
                       </div>
@@ -973,10 +993,10 @@ export default function Booking() {
                               </CardTitle>
                               <p className="text-sm text-text-muted mt-2">Confira os dados no resumo e confirme o agendamento abaixo</p>
                             </CardHeader>
-                            <CardContent className="p-4 sm:p-6 flex justify-end gap-2 sm:gap-3">
-                              <Button variant="outline" onClick={() => goToStep(4)}>Voltar</Button>
-                              <Button onClick={handleMarkBooking} disabled={!isFormValid} className="min-w-[160px] sm:min-w-[200px]">Confirmar Agendamento</Button>
-                            </CardContent>
+                                                         <CardContent className="p-4 sm:p-6 flex justify-between gap-2 sm:gap-3">
+                               <BackButton onClick={() => goToStep(4)}>Voltar</BackButton>
+                               <ContinueButton onClick={handleMarkBooking} disabled={!isFormValid}>Confirmar</ContinueButton>
+                             </CardContent>
                           </Card>
                         </div>
                       )}
@@ -1058,6 +1078,59 @@ export default function Booking() {
           </div>
         </div>
       </div>
+
+      {/* Botão flutuante do WhatsApp */}
+      <button
+        className="fixed bottom-8 right-8 bg-green-500 text-white w-14 h-14 rounded-full flex justify-center items-center shadow-lg hover:bg-green-600 transition-all duration-300 ease-out group z-50 hover:scale-105 active:scale-95"
+        aria-label="Chat on WhatsApp"
+        onClick={() => {
+          const phoneNumber = '5511963477665'; // Número da Barbearia Ligeirinho
+          const message = 'Olá! Gostaria de fazer um agendamento ou tirar uma dúvida.';
+          const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+        }}
+      >
+        <div className="absolute -right-1 -top-1 z-10">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <span
+              className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"
+            ></span>
+            <span
+              className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+            >
+              1
+            </span>
+          </div>
+        </div>
+
+        <svg
+          viewBox="0 0 16 16"
+          className="w-7 h-7"
+          fill="currentColor"
+          height="24"
+          width="24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"
+          ></path>
+        </svg>
+
+        <span
+          className="absolute inset-0 rounded-full border-4 border-white/30 scale-100 animate-pulse"
+        ></span>
+
+        <div
+          className="absolute right-full mr-3 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-300 whitespace-nowrap"
+        >
+          <div className="bg-gray-800 text-white text-sm px-3 py-1 rounded shadow-lg">
+            Precisa de ajuda?
+          </div>
+          <div
+            className="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"
+          ></div>
+        </div>
+      </button>
     </>
   );
 }

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, LogIn, Mail } from 'lucide-react';
+import { Lock, LogIn, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Header } from '@/components/Header';
+
 import { toast } from '@/hooks/use-toast';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,7 +35,7 @@ export default function Login() {
           title: 'Login realizado com sucesso!',
           description: 'Bem-vindo ao painel administrativo.'
         });
-        navigate('/admin');
+        navigate('/dashboard/');
       }
     } catch (error) {
       toast({
@@ -48,13 +48,7 @@ export default function Login() {
     }
   };
 
-  const handleDemoLogin = (type: 'admin' | 'client') => {
-    if (type === 'admin') {
-      setCredentials({ email: 'admin@barbearia.com', password: 'admin123' });
-    } else {
-      setCredentials({ email: 'cliente@barbearia.com', password: 'cliente123' });
-    }
-  };
+
 
   return (
     <>
@@ -66,7 +60,7 @@ export default function Login() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="min-h-screen bg-background">
-        <Header />
+  
         
         <div className="pt-24 pb-12">
           <div className="container mx-auto px-4">
@@ -122,27 +116,7 @@ export default function Login() {
                   </Button>
                 </form>
 
-                <div className="mt-8 pt-6 border-t border-border/20">
-                  <h3 className="text-sm font-medium mb-4 text-center">Credenciais de Demonstração</h3>
-                  
-                  <div className="space-y-3">
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => handleDemoLogin('admin')}
-                    >
-                      Acesso Admin (admin@barbearia.com)
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => handleDemoLogin('client')}
-                    >
-                      Acesso Cliente (cliente@barbearia.com)
-                    </Button>
-                  </div>
-                </div>
+
 
                 <div className="mt-6 text-center">
                   <p className="text-sm text-muted-foreground">
