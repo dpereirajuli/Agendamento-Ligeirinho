@@ -64,8 +64,10 @@ export default function Home() {
     setCurrentSlide(Math.min(index, maxSlides));
   };
 
-  // Auto-play do carrossel
+  // Auto-play do carrossel (apenas desktop)
   useEffect(() => {
+    if (window.innerWidth <= 768) return; // Desabilita no mobile
+    
     const interval = setInterval(() => {
       const slidesPerView = getSlidesPerView();
       const maxSlides = totalSlides - slidesPerView;
@@ -80,18 +82,20 @@ export default function Home() {
   const heroDescAnim = useInViewAnimation<HTMLParagraphElement>('animate-fade-in-up');
   const heroBtnsAnim = useInViewAnimation<HTMLDivElement>('animate-scale-in');
 
-  // Efeito parallax para o fundo
+  // Efeito parallax para o fundo (apenas desktop)
   useEffect(() => {
+    if (window.innerWidth <= 768) return; // Desabilita no mobile
+    
     const handleScroll = () => {
       const scrolled = window.pageYOffset;
       const parallax = document.querySelector('.parallax-bg') as HTMLElement;
       if (parallax) {
-        const speed = scrolled * 0.5;
+        const speed = scrolled * 0.3; // Reduzido para melhor performance
         parallax.style.transform = `translateY(${speed}px)`;
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -126,25 +130,17 @@ export default function Home() {
           <div className="absolute inset-0 z-0 bg-black/60" />
 
           {/* Conteúdo Texto - Centralizado */}
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            className="relative z-10 text-center max-w-4xl px-4"
-          >
+          <div className="relative z-10 text-center max-w-4xl px-4">
             {/* Logo acima do título */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-              className="mb-8"
-            >
+            <div className="mb-8">
               <img 
                 src={logo} 
                 alt="Logo Barbearia Ligeirinho" 
                 className="w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 mx-auto drop-shadow-2xl"
+                loading="eager"
+                decoding="async"
               />
-            </motion.div>
+            </div>
             <h1
               ref={heroTitleAnim.ref}
               className={`text-4xl md:text-6xl font-bold text-white mb-6 font-playfair ${heroTitleAnim.className}`}
@@ -201,7 +197,7 @@ export default function Home() {
                 </button>
               </Link>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* Services Section - Nova Paleta */}
@@ -220,23 +216,53 @@ export default function Home() {
             <div className="services-palette mx-auto max-w-6xl">
               <div className="palette">
                 <div className="color">
-                  <img src="/src/assets/galeria.jpg" alt="Corte Clássico" />
+                  <img 
+                    src={galeria1} 
+                    alt="Corte Clássico" 
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                   <span>Corte Clássico</span>
                 </div>
                 <div className="color">
-                  <img src="/src/assets/galeria2.jpg" alt="Corte Moderno" />
+                  <img 
+                    src={galeria2} 
+                    alt="Corte Moderno" 
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                   <span>Corte Moderno</span>
                 </div>
                 <div className="color">
-                  <img src="/src/assets/galeria3.jpg" alt="Barba" />
+                  <img 
+                    src={galeria3} 
+                    alt="Barba" 
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                   <span>Barba</span>
                 </div>
                 <div className="color">
-                  <img src="/src/assets/galeria5.jpg" alt="Infantil" />
+                  <img 
+                    src={galeria5} 
+                    alt="Infantil" 
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                   <span>Infantil</span>
                 </div>
                 <div className="color">
-                  <img src="/src/assets/galeria6.jpg" alt="Infantil" />
+                  <img 
+                    src={galeria6} 
+                    alt="Infantil" 
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                   <span>Infantil</span>
                 </div>
               </div>
@@ -315,6 +341,8 @@ export default function Home() {
                     src={sobreImage}
                     alt="Equipe da Barbearia"
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>
@@ -352,6 +380,8 @@ export default function Home() {
                         src={image} 
                         alt={`Galeria ${index + 1}`}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
                       <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 hover:opacity-100 transition-opacity duration-300">

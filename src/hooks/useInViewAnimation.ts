@@ -5,7 +5,14 @@ export function useInViewAnimation<T extends HTMLElement = HTMLElement>(animatio
   const [inView, setInView] = useState(false);
 
   useEffect(() => {
+    // Desabilita animações no mobile para melhor performance
+    if (window.innerWidth <= 768) {
+      setInView(true);
+      return;
+    }
+
     if (!ref.current) return;
+    
     const observer = new window.IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -13,8 +20,13 @@ export function useInViewAnimation<T extends HTMLElement = HTMLElement>(animatio
           observer.disconnect();
         }
       },
-      options || { threshold: 0.15 }
+      {
+        threshold: 0.1, // Reduzido para melhor performance
+        rootMargin: '50px', // Adiciona margem para carregar antes
+        ...options
+      }
     );
+    
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [ref, options]);

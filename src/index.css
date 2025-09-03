@@ -69,6 +69,25 @@
   
   html {
     scroll-behavior: smooth;
+    /* Otimizações de performance */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Otimizações para dispositivos móveis */
+  @media (max-width: 768px) {
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Desabilita animações pesadas no mobile */
+    .animate-fade-in-up,
+    .animate-scale-in {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
   }
 }
 
@@ -275,10 +294,14 @@
 .services-palette {
   height: 300px;
   width: 100%;
+  max-width: 1200px;
   border-radius: 1em;
   overflow: hidden;
   box-shadow: 0 10px 20px #dbdbdb;
   font-family: sans-serif;
+  /* Otimizações de performance */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .services-palette .palette {
@@ -296,18 +319,20 @@
   color: white;
   font-weight: 600;
   letter-spacing: 1px;
-  transition: flex 0.1s linear;
+  transition: flex 0.2s ease-out;
   position: relative;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .services-palette .color span {
   opacity: 0;
-  transition: opacity 0.1s linear;
+  transition: opacity 0.2s ease;
   position: absolute;
   z-index: 10;
   text-align: center;
   font-size: 1.1em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
 .services-palette .color img {
@@ -316,7 +341,7 @@
   height: 100%;
   object-fit: cover;
   opacity: 0.8;
-  transition: opacity 0.1s linear;
+  transition: opacity 0.3s ease;
   top: 0;
   left: 0;
 }
@@ -369,5 +394,30 @@
 .services-palette #stats svg {
   fill: #bebebe;
   transform: scale(1.2);
+}
+
+/* Otimizações para mobile */
+@media (max-width: 768px) {
+  .services-palette {
+    height: 250px;
+  }
+  
+  .services-palette .color {
+    transition: flex 0.1s ease-out;
+  }
+  
+  .services-palette .color:hover {
+    flex: 1.5; /* Reduz o efeito hover no mobile */
+  }
+  
+  /* Desabilita animações pesadas no mobile */
+  .animate-fade-in-up,
+  .animate-scale-in,
+  .animate-slide-in-left,
+  .animate-slide-in-right {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
