@@ -75,13 +75,13 @@ export default function Fiado() {
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Fiado</h1>
-          <p className="text-gray-600">Controle de vendas a prazo</p>
+          <h1 className="text-2xl font-bold text-foreground">Fiado</h1>
+          <p className="text-muted-foreground">Controle de vendas a prazo</p>
         </div>
         
         <div className="text-right">
-          <p className="text-sm text-gray-600">Total em fiado</p>
-          <p className="text-2xl font-bold text-red-600">
+          <p className="text-sm text-muted-foreground">Total em fiado</p>
+          <p className="text-2xl font-bold text-destructive">
             R$ {totalFiado.toFixed(2)}
           </p>
         </div>
@@ -89,39 +89,39 @@ export default function Fiado() {
 
       {/* Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Pendente</CardTitle>
-            <CreditCard className="h-4 w-4 text-gray-600" />
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               R$ {totalFiado.toFixed(2)}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Clientes</CardTitle>
-            <User className="h-4 w-4 text-gray-600" />
+            <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{clientsWithDebt.length}</div>
-            <p className="text-xs text-gray-600">
+            <div className="text-2xl font-bold text-foreground">{clientsWithDebt.length}</div>
+            <p className="text-xs text-muted-foreground">
               com débito pendente
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Transações Pendentes</CardTitle>
-            <Clock className="h-4 w-4 text-gray-600" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{totalPendingTransactions}</div>
-            <p className="text-xs text-gray-600">
+            <div className="text-2xl font-bold text-foreground">{totalPendingTransactions}</div>
+            <p className="text-xs text-muted-foreground">
               aguardando pagamento
             </p>
           </CardContent>
@@ -129,7 +129,7 @@ export default function Fiado() {
       </div>
 
       {/* Filtro */}
-      <Card className="border-gray-200">
+      <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -155,20 +155,20 @@ export default function Fiado() {
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Clientes com Débito</h2>
           {phoneFilter && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Mostrando {filteredClients.length} de {clientsWithDebt.length} clientes
             </p>
           )}
         </div>
         
         {filteredClients.length === 0 ? (
-          <Card className="border-gray-200">
+          <Card className="border-border">
             <CardContent className="text-center py-8">
-              <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 {phoneFilter ? 'Nenhum cliente encontrado' : 'Nenhum débito pendente'}
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {phoneFilter ? 'Ajuste o filtro ou verifique o telefone' : 'Todos os clientes estão em dia com os pagamentos!'}
               </p>
             </CardContent>
@@ -176,7 +176,7 @@ export default function Fiado() {
         ) : (
           <div className="grid gap-4">
             {currentClients.map(client => (
-              <Card key={client.id} className="border-gray-200">
+              <Card key={client.id} className="border-border">
                 <CardHeader>
                   <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                     <div className="flex-1">
@@ -189,7 +189,7 @@ export default function Fiado() {
                       </CardDescription>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-red-600">
+                      <p className="text-2xl font-bold text-destructive">
                         R$ {client.totalDebt.toFixed(2)}
                       </p>
                     </div>
@@ -200,11 +200,11 @@ export default function Fiado() {
                   <div className="space-y-3">
                     <h4 className="font-medium text-sm">Histórico de Transações:</h4>
                     {client.transactions.map(transaction => (
-                      <div key={transaction.id} className="flex flex-col md:flex-row md:justify-between md:items-center p-3 bg-gray-50 rounded-lg gap-3">
+                      <div key={transaction.id} className="flex flex-col md:flex-row md:justify-between md:items-center p-3 bg-muted rounded-lg gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <Badge variant={transaction.status === 'paid' ? 'default' : 'secondary'} 
-                                   className={transaction.status === 'paid' ? 'bg-gray-900 text-white' : 'bg-red-600 text-white'}>
+                                   className={transaction.status === 'paid' ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'}>
                               {transaction.status === 'paid' ? (
                                 <>
                                   <Check className="h-3 w-3 mr-1" />
@@ -219,7 +219,7 @@ export default function Fiado() {
                             </Badge>
                           </div>
                           <p className="font-medium text-sm">{transaction.description}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                             <Calendar className="h-3 w-3" />
                             {transaction.date.toLocaleDateString()}
                           </div>
@@ -241,7 +241,7 @@ export default function Fiado() {
                                       setSelectedClient(client);
                                       setSelectedTransaction(transaction);
                                     }}
-                                    className="border-gray-300 hover:bg-gray-50"
+                                    className="border-border hover:bg-muted"
                                   >
                                     Pagamento Parcial
                                   </Button>
@@ -269,7 +269,7 @@ export default function Fiado() {
                                       />
                                     </div>
                                     
-                                    <Button type="submit" className="w-full bg-gray-900 hover:bg-gray-800 text-white">
+                                    <Button type="submit" className="w-full">
                                       Registrar Pagamento
                                     </Button>
                                   </form>
@@ -279,7 +279,7 @@ export default function Fiado() {
                               <Button 
                                 size="sm" 
                                 onClick={() => handleMarkAsPaid(client.id, transaction.id, client.name, transaction.amount)}
-                                className="bg-gray-900 hover:bg-gray-800 text-white"
+                                className=""
                               >
                                 Marcar como Pago
                               </Button>
@@ -308,10 +308,10 @@ export default function Fiado() {
             </Button>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Página {currentPage} de {totalPages}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 ({filteredClients.length} clientes)
               </span>
             </div>

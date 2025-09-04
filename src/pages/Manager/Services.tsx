@@ -95,7 +95,7 @@ function ServiceForm({
       </div>
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
       <div className="flex justify-end">
-        <Button type="submit" disabled={isLoading} className="bg-gray-900 hover:bg-gray-800 text-white">
+        <Button type="submit" disabled={isLoading}>
           {isLoading ? 'Salvando...' : 'Salvar'}
         </Button>
       </div>
@@ -227,11 +227,11 @@ export default function Services() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <Scissors className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <Scissors className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Acesso Restrito
           </h3>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Apenas administradores podem gerenciar serviços
           </p>
         </div>
@@ -243,13 +243,13 @@ export default function Services() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Serviços</h1>
-          <p className="text-gray-600">Gerencie os serviços oferecidos</p>
+          <h1 className="text-2xl font-bold text-foreground">Serviços</h1>
+          <p className="text-muted-foreground">Gerencie os serviços oferecidos</p>
         </div>
 
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Novo Serviço
             </Button>
@@ -265,28 +265,28 @@ export default function Services() {
       </div>
 
       {loading ? (
-        <p className="text-center text-gray-600">Carregando...</p>
+        <p className="text-center text-muted-foreground">Carregando...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentServices.map((service) => (
-            <Card key={service.id} className="border-gray-200">
+            <Card key={service.id} className="border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Scissors className="h-5 w-5 text-gray-600" />
+                  <Scissors className="h-5 w-5 text-muted-foreground" />
                   {service.type}
                 </CardTitle>
                 <CardDescription>Serviço profissional</CardDescription>
               </CardHeader>
               <CardContent>
                                  <div className="space-y-3">
-                   <div className="text-2xl font-bold text-gray-900">R$ {service.price.toFixed(2)}</div>
-                   <p className="text-sm text-gray-600">{service.duration} minutos</p>
+                   <div className="text-2xl font-bold text-foreground">R$ {service.price.toFixed(2)}</div>
+                   <p className="text-sm text-muted-foreground">{service.duration} minutos</p>
                    <div className="flex gap-2 pt-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(service)}
-                      className="flex-1 border-gray-300 hover:bg-gray-50"
+                      className="flex-1"
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
@@ -295,7 +295,7 @@ export default function Services() {
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(service.id, service.type)}
-                      className="flex-1 bg-red-600 hover:bg-red-700"
+                      className="flex-1"
                       disabled={isLoading}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
@@ -311,10 +311,10 @@ export default function Services() {
 
       {services.length === 0 && !loading && (
         <div className="text-center py-12">
-          <Scissors className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum serviço cadastrado</h3>
-          <p className="text-gray-600 mb-4">Comece adicionando os serviços que sua barbearia oferece</p>
-          <Button onClick={() => setIsAddOpen(true)} className="bg-gray-900 hover:bg-gray-800 text-white">
+          <Scissors className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Nenhum serviço cadastrado</h3>
+          <p className="text-muted-foreground mb-4">Comece adicionando os serviços que sua barbearia oferece</p>
+          <Button onClick={() => setIsAddOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Primeiro Serviço
           </Button>
@@ -332,8 +332,8 @@ export default function Services() {
             Anterior
           </Button>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Página {currentPage} de {totalPages}</span>
-            <span className="text-sm text-gray-500">({services.length} serviços)</span>
+            <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
+            <span className="text-sm text-muted-foreground">({services.length} serviços)</span>
           </div>
           <Button
             variant="outline"

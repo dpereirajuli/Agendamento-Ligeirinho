@@ -71,8 +71,8 @@ export default function Products() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Produtos</h1>
-          <p className="text-gray-600">Gerencie seu estoque</p>
+          <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
+          <p className="text-muted-foreground">Gerencie seu estoque</p>
         </div>
 
         {user?.role === 'admin' && (
@@ -101,7 +101,7 @@ export default function Products() {
           <Card key={product.id} className="relative">
             {product.stock <= product.minStock && (
               <div className="absolute top-3 right-3">
-                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
             )}
             
@@ -117,13 +117,13 @@ export default function Products() {
                 <div className="flex justify-between">
                   <span>Estoque:</span>
                   <span className={`font-medium ${
-                    product.stock <= product.minStock ? 'text-orange-600' : 'text-green-600'
+                    product.stock <= product.minStock ? 'text-destructive' : 'text-success'
                   }`}>
                     {product.stock} unidades
                   </span>
                 </div>
                 
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Mínimo:</span>
                   <span>{product.minStock} unidades</span>
                 </div>
@@ -160,15 +160,15 @@ export default function Products() {
       {/* Estado vazio */}
       {products.length === 0 && (
         <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Nenhum produto cadastrado
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Comece adicionando produtos ao seu estoque
           </p>
           {user?.role === 'admin' && (
-            <Button onClick={() => setIsAddOpen(true)} className="bg-gray-900 hover:bg-gray-800 text-white">
+            <Button onClick={() => setIsAddOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Adicionar Primeiro Produto
             </Button>
@@ -189,10 +189,10 @@ export default function Products() {
           </Button>
           
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               Página {currentPage} de {totalPages}
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               ({products.length} produtos)
             </span>
           </div>

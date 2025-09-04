@@ -350,13 +350,13 @@ export default function Barbers() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Barbeiros</h1>
-            <p className="text-gray-600">Gerencie a equipe de profissionais</p>
+            <h1 className="text-2xl font-bold text-foreground">Barbeiros</h1>
+            <p className="text-muted-foreground">Gerencie a equipe de profissionais</p>
           </div>
 
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
+              <Button className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Novo Barbeiro
               </Button>

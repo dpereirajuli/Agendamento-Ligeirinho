@@ -131,28 +131,28 @@ export default function Transactions() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'product': return 'bg-gray-200 text-gray-800';
-      case 'service': return 'bg-gray-300 text-gray-900';
-      case 'mixed': return 'bg-purple-200 text-purple-800';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'product': return 'bg-muted text-muted-foreground';
+      case 'service': return 'bg-primary/20 text-primary';
+      case 'mixed': return 'bg-accent/20 text-accent-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getPaymentColor = (method: string) => {
     switch (method) {
-      case 'dinheiro': return 'bg-gray-600 text-white';
-      case 'cartao': return 'bg-gray-700 text-white';
-      case 'pix': return 'bg-gray-800 text-white';
-      case 'fiado': return 'bg-red-600 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'dinheiro': return 'bg-success text-success-foreground';
+      case 'cartao': return 'bg-primary text-primary-foreground';
+      case 'pix': return 'bg-accent text-accent-foreground';
+      case 'fiado': return 'bg-destructive text-destructive-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-gray-900 text-white';
-      case 'pending': return 'bg-red-600 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'completed': return 'bg-success text-success-foreground';
+      case 'pending': return 'bg-destructive text-destructive-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -196,62 +196,62 @@ export default function Transactions() {
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transações</h1>
-          <p className="text-gray-600">Histórico completo de vendas</p>
+          <h1 className="text-2xl font-bold text-foreground">Transações</h1>
+          <p className="text-muted-foreground">Histórico completo de vendas</p>
         </div>
       </div>
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Receita Confirmada</CardTitle>
-            <DollarSign className="h-4 w-4 text-gray-600" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-foreground">
               R$ {totalRevenue.toFixed(2)}
             </div>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               {transactions.filter(t => t.status === 'completed').length} transações pagas
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pendente</CardTitle>
-            <Calendar className="h-4 w-4 text-gray-600" />
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">R$ {pendingRevenue.toFixed(2)}</div>
-            <p className="text-xs text-gray-600">
+            <div className="text-2xl font-bold text-destructive">R$ {pendingRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
               {transactions.filter(t => t.status === 'pending').length} aguardando pagamento
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Hoje</CardTitle>
-            <Calendar className="h-4 w-4 text-gray-600" />
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">R$ {todayRevenue.toFixed(2)}</div>
-            <p className="text-xs text-gray-600">
+            <div className="text-2xl font-bold text-foreground">R$ {todayRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
               {transactions.filter(t => t.date.toDateString() === new Date().toDateString()).length} transações hoje
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Transações</CardTitle>
-            <Receipt className="h-4 w-4 text-gray-600" />
+            <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{filteredTransactions.length}</div>
-            <p className="text-xs text-gray-600">
+            <div className="text-2xl font-bold text-foreground">{filteredTransactions.length}</div>
+            <p className="text-xs text-muted-foreground">
               {transactions.length > filteredTransactions.length ? 
                 `de ${transactions.length} totais` : 
                 'Todas as transações'
@@ -264,7 +264,7 @@ export default function Transactions() {
 
 
       {/* Filtros */}
-      <Card className="border-gray-200">
+      <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -332,12 +332,12 @@ export default function Transactions() {
           </div>
           
           <div className="flex flex-col md:flex-row md:justify-between md:items-center mt-4 pt-4 border-t gap-2">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               Mostrando {filteredTransactions.length} de {transactions.length} transações
             </div>
             <button
               onClick={clearFilters}
-              className="text-sm text-gray-900 hover:text-gray-700 underline self-start md:self-auto"
+              className="text-sm text-foreground hover:text-muted-foreground underline self-start md:self-auto"
             >
               Limpar filtros
             </button>
@@ -348,13 +348,13 @@ export default function Transactions() {
       {/* Lista de transações */}
       <div className="space-y-4">
         {filteredTransactions.length === 0 ? (
-          <Card className="border-gray-200">
+          <Card className="border-border">
             <CardContent className="text-center py-8">
-              <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Nenhuma transação encontrada
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Ajuste os filtros ou registre uma nova venda
               </p>
             </CardContent>
@@ -362,7 +362,7 @@ export default function Transactions() {
         ) : (
           <div className="space-y-3">
             {currentTransactions.map(transaction => (
-              <Card key={transaction.id} className="border-gray-200">
+              <Card key={transaction.id} className="border-border">
                 <CardContent className="p-4">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex-1">
@@ -395,7 +395,7 @@ export default function Transactions() {
                           {transaction.status === 'completed' ? 'Pago' : 'Pendente'}
                         </Badge>
                         {transaction.barberId && (
-                          <Badge variant="outline" className="flex items-center gap-1 border-gray-300">
+                          <Badge variant="outline" className="flex items-center gap-1 border-border">
                             <User className="h-3 w-3" />
                             {getBarberName(transaction.barberId)}
                           </Badge>
@@ -414,7 +414,7 @@ export default function Transactions() {
                                   {services.length > 0 && products.length === 0 && (
                                     <div className="space-y-1">
                                       {services.map((service, index) => (
-                                        <p key={index} className="text-sm text-gray-900 bg-gray-50 px-2 py-1 rounded border-l-2 border-gray-300">
+                                        <p key={index} className="text-sm text-foreground bg-muted px-2 py-1 rounded border-l-2 border-border">
                                           {service}
                                         </p>
                                       ))}
@@ -425,7 +425,7 @@ export default function Transactions() {
                                   {products.length > 0 && services.length === 0 && (
                                     <div className="space-y-1">
                                       {products.map((product, index) => (
-                                        <p key={index} className="text-sm text-gray-900 bg-blue-50 px-2 py-1 rounded border-l-2 border-blue-300">
+                                        <p key={index} className="text-sm text-foreground bg-primary/10 px-2 py-1 rounded border-l-2 border-primary">
                                           {product}
                                         </p>
                                       ))}
@@ -436,26 +436,26 @@ export default function Transactions() {
                                   {services.length > 0 && products.length > 0 && (
                                     <>
                                       <div>
-                                        <p className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                                        <p className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-1">
                                           <Scissors className="h-3 w-3" />
                                           Serviços:
                                         </p>
                                         <div className="space-y-1">
                                           {services.map((service, index) => (
-                                            <p key={index} className="text-sm text-gray-900 bg-gray-50 px-2 py-1 rounded border-l-2 border-gray-300">
+                                            <p key={index} className="text-sm text-foreground bg-muted px-2 py-1 rounded border-l-2 border-border">
                                               {service}
                                             </p>
                                           ))}
                                         </div>
                                       </div>
                                       <div>
-                                        <p className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                                        <p className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-1">
                                           <Package className="h-3 w-3" />
                                           Produtos:
                                         </p>
                                         <div className="space-y-1">
                                           {products.map((product, index) => (
-                                            <p key={index} className="text-sm text-gray-900 bg-blue-50 px-2 py-1 rounded border-l-2 border-blue-300">
+                                            <p key={index} className="text-sm text-foreground bg-primary/10 px-2 py-1 rounded border-l-2 border-primary">
                                               {product}
                                             </p>
                                           ))}
@@ -492,7 +492,7 @@ export default function Transactions() {
                         })()}
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                         <span>Por: {transaction.user}</span>
                         <span>{transaction.date.toLocaleString()}</span>
                         {transaction.clientName && (
@@ -507,12 +507,12 @@ export default function Transactions() {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className={`text-xl font-bold ${
-                          transaction.status === 'completed' ? 'text-gray-900' : 'text-red-600'
+                          transaction.status === 'completed' ? 'text-foreground' : 'text-destructive'
                         }`}>
                           R$ {transaction.amount.toFixed(2)}
                         </p>
                         {transaction.status === 'pending' && (
-                          <p className="text-xs text-red-600 font-medium">
+                          <p className="text-xs text-destructive font-medium">
                             Aguardando pagamento
                           </p>
                         )}
@@ -525,7 +525,7 @@ export default function Transactions() {
                           setTransactionToDelete(transaction.id);
                           setDeleteDialogOpen(true);
                         }}
-                        className="bg-red-600 hover:bg-red-700"
+                        className=""
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -550,10 +550,10 @@ export default function Transactions() {
             </Button>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Página {currentPage} de {totalPages}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 ({filteredTransactions.length} transações)
               </span>
             </div>

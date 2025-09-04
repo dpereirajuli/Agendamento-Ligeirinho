@@ -177,11 +177,11 @@ export default function Users() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Acesso Restrito
           </h3>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Apenas administradores podem gerenciar usuários
           </p>
         </div>
@@ -245,13 +245,13 @@ export default function Users() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Usuários</h1>
-          <p className="text-gray-600">Gerencie usuários do sistema</p>
+          <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
+          <p className="text-muted-foreground">Gerencie usuários do sistema</p>
         </div>
 
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Novo Usuário
             </Button>
@@ -270,16 +270,16 @@ export default function Users() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {users.map(user => (
-          <Card key={user.id} className="border-gray-200">
+          <Card key={user.id} className="border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {user.role === 'admin' ? (
-                  <Shield className="h-5 w-5 text-red-600" />
+                  <Shield className="h-5 w-5 text-destructive" />
                 ) : (
-                  <User className="h-5 w-5 text-gray-600" />
+                  <User className="h-5 w-5 text-muted-foreground" />
                 )}
                 {user.name}
-                <span className={`text-xs px-2 py-1 rounded ${user.approval_status === 'approved' ? 'bg-green-100 text-green-800' : user.approval_status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                <span className={`text-xs px-2 py-1 rounded ${user.approval_status === 'approved' ? 'bg-success/20 text-success' : user.approval_status === 'rejected' ? 'bg-destructive/20 text-destructive' : 'bg-primary/20 text-primary'}`}>
                   {user.approval_status === 'approved' ? 'Aprovado' : user.approval_status === 'rejected' ? 'Rejeitado' : 'Pendente'}
                 </span>
               </CardTitle>
@@ -291,11 +291,11 @@ export default function Users() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Função:</span>
+                  <span className="text-sm text-muted-foreground">Função:</span>
                   <span className={`text-xs px-2 py-1 rounded ${
                     user.role === 'admin' 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-destructive/20 text-destructive' 
+                      : 'bg-muted text-muted-foreground'
                   }`}>
                     {user.role === 'admin' ? 'Administrador' : 'Usuário'}
                   </span>
@@ -308,7 +308,7 @@ export default function Users() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleApprove(user.id)}
-                        className="flex-1 border-green-300 hover:bg-green-50 text-green-700"
+                        className="flex-1 border-success hover:bg-success/10 text-success"
                       >
                         Aprovar
                       </Button>
@@ -316,7 +316,7 @@ export default function Users() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleReject(user.id)}
-                        className="flex-1 border-red-300 hover:bg-red-50 text-red-700"
+                        className="flex-1 border-destructive hover:bg-destructive/10 text-destructive"
                       >
                         Rejeitar
                       </Button>
@@ -327,7 +327,7 @@ export default function Users() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(user)}
-                      className="flex-1 border-gray-300 hover:bg-gray-50"
+                      className="flex-1 border-border hover:bg-muted"
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
@@ -337,7 +337,7 @@ export default function Users() {
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(user.id, user.name)}
-                      className="flex-1 bg-red-600 hover:bg-red-700"
+                      className="flex-1"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Excluir
@@ -368,14 +368,14 @@ export default function Users() {
 
       {users.length === 0 && (
         <div className="text-center py-12">
-          <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Nenhum usuário cadastrado
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Comece adicionando usuários ao sistema
           </p>
-          <Button onClick={() => setIsAddOpen(true)} className="bg-gray-900 hover:bg-gray-800 text-white">
+          <Button onClick={() => setIsAddOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Primeiro Usuário
           </Button>

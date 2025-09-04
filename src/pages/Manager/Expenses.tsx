@@ -149,13 +149,13 @@ export default function Expenses() {
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gastos</h1>
-          <p className="text-gray-600">Controle de despesas da barbearia</p>
+          <h1 className="text-2xl font-bold text-foreground">Gastos</h1>
+          <p className="text-muted-foreground">Controle de despesas da barbearia</p>
         </div>
 
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Novo Gasto
             </Button>
@@ -198,7 +198,7 @@ export default function Expenses() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? 'Registrando...' : 'Registrar Gasto'}
@@ -210,31 +210,31 @@ export default function Expenses() {
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Gastos</CardTitle>
-            <DollarSign className="h-4 w-4 text-gray-600" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               R$ {totalExpenses.toFixed(2)}
             </div>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               {filteredExpenses.length} despesas
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gastos Hoje</CardTitle>
-            <Calendar className="h-4 w-4 text-gray-600" />
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               R$ {todayExpenses.toFixed(2)}
             </div>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               {filteredExpenses.filter(expense => 
                 expense.date.toDateString() === new Date().toDateString()
               ).length} despesas hoje
@@ -242,16 +242,16 @@ export default function Expenses() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gastos do Mês</CardTitle>
-            <Calendar className="h-4 w-4 text-gray-600" />
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               R$ {thisMonthExpenses.toFixed(2)}
             </div>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-muted-foreground">
               {filteredExpenses.filter(expense => {
                 const expenseDate = expense.date;
                 const currentDate = new Date();
@@ -264,7 +264,7 @@ export default function Expenses() {
       </div>
 
       {/* Filtros */}
-      <Card className="border-gray-200">
+      <Card className="border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -285,12 +285,12 @@ export default function Expenses() {
           </div>
           
           <div className="flex flex-col md:flex-row md:justify-between md:items-center mt-4 pt-4 border-t gap-2">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               Mostrando {filteredExpenses.length} de {expenses.length} gastos
             </div>
             <button
               onClick={clearFilters}
-              className="text-sm text-gray-900 hover:text-gray-700 underline self-start md:self-auto"
+              className="text-sm text-foreground hover:text-muted-foreground underline self-start md:self-auto"
             >
               Limpar filtros
             </button>
@@ -301,13 +301,13 @@ export default function Expenses() {
       {/* Lista de gastos */}
       <div className="space-y-4">
         {filteredExpenses.length === 0 ? (
-          <Card className="border-gray-200">
+          <Card className="border-border">
             <CardContent className="text-center py-8">
-              <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Nenhum gasto encontrado
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {dateFilter ? 'Ajuste os filtros ou registre um novo gasto' : 'Comece registrando os gastos da barbearia'}
               </p>
             </CardContent>
@@ -315,15 +315,15 @@ export default function Expenses() {
         ) : (
           <div className="space-y-3">
             {currentExpenses.map(expense => (
-              <Card key={expense.id} className="border-gray-200">
+              <Card key={expense.id} className="border-border">
                 <CardContent className="p-4">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 mb-2">
+                      <p className="font-medium text-foreground mb-2">
                         {expense.description}
                       </p>
                       
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                         <span>Por: {expense.user}</span>
                         <span>{expense.date.toLocaleDateString()}</span>
                       </div>
@@ -331,7 +331,7 @@ export default function Expenses() {
                     
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="text-xl font-bold text-red-600">
+                        <p className="text-xl font-bold text-destructive">
                           R$ {expense.amount.toFixed(2)}
                         </p>
                       </div>
@@ -340,7 +340,7 @@ export default function Expenses() {
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDelete(expense.id)}
-                        className="bg-red-600 hover:bg-red-700"
+                        className=""
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -365,10 +365,10 @@ export default function Expenses() {
             </Button>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 Página {currentPage} de {totalPages}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 ({filteredExpenses.length} gastos)
               </span>
             </div>

@@ -241,9 +241,9 @@ export default function Sales() {
     <div className="space-y-6">
 
       <Tabs value={currentTab} onValueChange={setCurrentTab}>
-        <TabsList className="grid w-full grid-cols-2 bg-gray-100">
-          <TabsTrigger value="products" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Produtos</TabsTrigger>
-          <TabsTrigger value="services" className="data-[state=active]:bg-red-500 data-[state=active]:text-black">Serviços</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="products">Produtos</TabsTrigger>
+          <TabsTrigger value="services">Serviços</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products" className="space-y-4">
@@ -253,7 +253,7 @@ export default function Sales() {
                 .filter(p => p.stock > 0)
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map(product => (
-              <Card key={product.id} className="hover:shadow-md transition-shadow border-gray-200">
+              <Card key={product.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">{product.name}</CardTitle>
                   <CardDescription>
@@ -262,13 +262,12 @@ export default function Sales() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-2xl font-bold text-foreground">
                       R$ {product.price.toFixed(2)}
                     </div>
                     <Button 
                       onClick={() => addToCart(product, 'product')}
                       size="sm"
-                      className="bg-gray-900 hover:bg-gray-800 text-white"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -282,18 +281,16 @@ export default function Sales() {
                 variant="outline"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="bg-white"
               >
                 Anterior
               </Button>
-              <span className="py-2 px-4 bg-gray-100 rounded">
+              <span className="py-2 px-4 bg-muted rounded">
                 Página {currentPage} de {Math.ceil(products.filter(p => p.stock > 0).length / itemsPerPage)}
               </span>
               <Button
                 variant="outline"
                 onClick={() => setCurrentPage(prev => Math.min(Math.ceil(products.filter(p => p.stock > 0).length / itemsPerPage), prev + 1))}
                 disabled={currentPage === Math.ceil(products.filter(p => p.stock > 0).length / itemsPerPage)}
-                className="bg-white"
               >
                 Próxima
               </Button>
@@ -303,14 +300,14 @@ export default function Sales() {
 
         <TabsContent value="services" className="space-y-4">
           {barbers.length > 0 && (
-            <Card className="border-gray-200 bg-black text-white">
+            <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-white">Selecionar Barbeiro</CardTitle>
-                <CardDescription className="text-gray-300">Escolha o barbeiro que realizará o serviço</CardDescription>
+                <CardTitle className="text-card-foreground">Selecionar Barbeiro</CardTitle>
+                <CardDescription className="text-muted-foreground">Escolha o barbeiro que realizará o serviço</CardDescription>
               </CardHeader>
               <CardContent>
                 <Select value={selectedBarber} onValueChange={setSelectedBarber}>
-                  <SelectTrigger className="bg-white text-black border-gray-300">
+                  <SelectTrigger>
                     <SelectValue placeholder="Selecione um barbeiro" />
                   </SelectTrigger>
                   <SelectContent>
@@ -330,10 +327,10 @@ export default function Sales() {
               {services
                 .slice((currentServicePage - 1) * servicesPerPage, currentServicePage * servicesPerPage)
                 .map(service => (
-              <Card key={service.id} className="hover:shadow-md transition-shadow border-gray-200">
+              <Card key={service.id} className="hover:shadow-md transition-shadow border-border">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Scissors className="h-5 w-5 text-gray-600" />
+                    <Scissors className="h-5 w-5 text-muted-foreground" />
                     {service.type}
                   </CardTitle>
                   <CardDescription>
@@ -342,14 +339,13 @@ export default function Sales() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-2xl font-bold text-foreground">
                       R$ {service.price.toFixed(2)}
                     </div>
                     <Button
                       onClick={() => addToCart(service, 'service', selectedBarber)}
                       size="sm"
                       disabled={!selectedBarber}
-                      className="bg-gray-900 hover:bg-gray-800 text-white disabled:bg-gray-400"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -363,18 +359,16 @@ export default function Sales() {
                 variant="outline"
                 onClick={() => setCurrentServicePage(prev => Math.max(1, prev - 1))}
                 disabled={currentServicePage === 1}
-                className="bg-white"
               >
                 Anterior
               </Button>
-              <span className="py-2 px-4 bg-gray-100 rounded">
+              <span className="py-2 px-4 bg-muted rounded">
                 Página {currentServicePage} de {Math.ceil(services.length / servicesPerPage)}
               </span>
               <Button
                 variant="outline"
                 onClick={() => setCurrentServicePage(prev => Math.min(Math.ceil(services.length / servicesPerPage), prev + 1))}
                 disabled={currentServicePage === Math.ceil(services.length / servicesPerPage)}
-                className="bg-white"
               >
                 Próxima
               </Button>
@@ -385,22 +379,22 @@ export default function Sales() {
 
       {/* Carrinho */}
       {cart.length > 0 && (
-        <Card className="border-gray-200">
+        <Card className="border-border">
           <CardHeader>
             <CardTitle>Carrinho de Compras</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {cart.map((item, index) => (
-                <div key={`${item.id}-${item.type}-${item.barberId}-${index}`} className="p-3 border border-gray-200 rounded-lg">
+                <div key={`${item.id}-${item.type}-${item.barberId}-${index}`} className="p-3 border border-border rounded-lg">
                   {/* Informações do item */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-0">
                     <div className="flex-1">
                       <h4 className="font-medium text-base">{item.name}</h4>
                       {item.barberName && (
-                        <p className="text-sm text-gray-600">Barbeiro: {item.barberName}</p>
+                        <p className="text-sm text-muted-foreground">Barbeiro: {item.barberName}</p>
                       )}
-                      <p className="text-sm text-gray-600">R$ {item.price.toFixed(2)} cada</p>
+                      <p className="text-sm text-muted-foreground">R$ {item.price.toFixed(2)} cada</p>
                     </div>
                     
                     <div className="text-right sm:text-left">
@@ -415,7 +409,7 @@ export default function Sales() {
                         variant="outline"
                         size="sm"
                         onClick={() => updateQuantity(item.id, item.type, item.barberId, item.quantity - 1)}
-                        className="border-gray-300 h-8 w-8 p-0"
+                        className="h-8 w-8 p-0"
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -426,7 +420,7 @@ export default function Sales() {
                         variant="outline"
                         size="sm"
                         onClick={() => updateQuantity(item.id, item.type, item.barberId, item.quantity + 1)}
-                        className="border-gray-300 h-8 w-8 p-0"
+                        className="h-8 w-8 p-0"
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
@@ -436,7 +430,7 @@ export default function Sales() {
                       variant="destructive"
                       size="sm"
                       onClick={() => removeFromCart(item.id, item.type, item.barberId)}
-                      className="bg-red-600 hover:bg-red-700 h-8 w-8 p-0"
+                      className="h-8 w-8 p-0"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -448,10 +442,10 @@ export default function Sales() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                   <span className="text-xl font-bold">Total:</span>
                   <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <span className="text-xl font-bold text-gray-900">R$ {getCartTotal().toFixed(2)}</span>
+                    <span className="text-xl font-bold text-foreground">R$ {getCartTotal().toFixed(2)}</span>
                     <Button 
                       onClick={() => setIsCheckoutOpen(true)}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2"
                     >
                       <ShoppingCart className="h-4 w-4" />
                       Finalizar Venda
@@ -539,10 +533,10 @@ export default function Sales() {
             <div className="border-t pt-4">
               <div className="flex justify-between items-center text-xl font-bold mb-4">
                 <span>Total:</span>
-                <span className="text-gray-900">R$ {getCartTotal().toFixed(2)}</span>
+                <span className="text-foreground">R$ {getCartTotal().toFixed(2)}</span>
               </div>
               
-              <Button type="submit" className="w-full bg-gray-900 hover:bg-gray-800 text-white">
+              <Button type="submit" className="w-full">
                 Confirmar Venda
               </Button>
             </div>
