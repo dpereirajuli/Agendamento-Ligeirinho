@@ -67,7 +67,7 @@ export function AuthForm() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between bg-gray-100 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-between bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex flex-col items-center gap-2 mb-4">
@@ -112,7 +112,7 @@ export function AuthForm() {
                   />
                 </div>
                 
-                <Button type="submit" className="w-full bg-gray-900 hover:bg-gray-800" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Entrando...' : 'Entrar'}
                 </Button>
               </form>
@@ -156,7 +156,7 @@ export function AuthForm() {
                   />
                 </div>
                 
-                <Button type="submit" className="w-full bg-gray-900 hover:bg-gray-800" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Cadastrando...' : 'Cadastrar'}
                 </Button>
               </form>
@@ -164,7 +164,7 @@ export function AuthForm() {
           </Tabs>
         </CardContent>
       </Card>
-      <footer className="mt-8 text-xs text-gray-500">
+      <footer className="mt-8 text-xs text-muted-foreground">
         Dtech Labs 2025
       </footer>
     </div>

@@ -28,7 +28,7 @@ export function ManagerAuthGate({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     console.log('ManagerAuthGate: Loading state is true');
-    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Carregando...</div>;
   }
 
   if (!user) {
@@ -37,13 +37,13 @@ export function ManagerAuthGate({ children }: { children: React.ReactNode }) {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
               Acesso negado
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
+            <p className="mt-2 text-center text-sm text-muted-foreground">
               Seu perfil não foi encontrado. Contate o administrador.
             </p>
           </div>
@@ -59,13 +59,13 @@ export function ManagerAuthGate({ children }: { children: React.ReactNode }) {
 
   if (!isApproved) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
               Aguardando Aprovação
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
+            <p className="mt-2 text-center text-sm text-muted-foreground">
               Sua conta está pendente de aprovação pelo administrador. Por favor, aguarde.
             </p>
           </div>
