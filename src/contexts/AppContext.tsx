@@ -198,7 +198,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             amount: parseFloat(ft.amount.toString()),
             date: new Date(ft.created_at),
             status: ft.status
-          })) || []
+          })).sort((a, b) => b.date.getTime() - a.date.getTime()) || []
         }));
         console.log('Mapped fiado clients:', mappedFiado);
         setFiadoClients(mappedFiado);
@@ -444,7 +444,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           transaction_id: data.id,
           amount: transaction.amount,
           description: transaction.description,
-          status: 'pending'
+          status: 'pending',
+          created_at: new Date().toISOString()
         });
     }
 

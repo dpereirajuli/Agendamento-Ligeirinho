@@ -12,7 +12,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { User, Phone, Search, Clock, Check, ChevronDown, CreditCard, Calendar, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { User, Phone, Search, Clock, Check, ChevronDown, CreditCard, Calendar as CalendarIcon, Filter } from 'lucide-react';
 
 export default function Fiado() {
   const { fiadoClients, payFiado, markFiadoAsPaid, products, services } = useApp();

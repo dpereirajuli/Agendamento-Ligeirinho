@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Receipt, Filter, Calendar, DollarSign, User, Trash2, Scissors, Package, Calendar as CalendarIcon } from 'lucide-react';
+import { Receipt, Filter, Calendar, DollarSign, User, Trash2, Scissors, Package } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,15 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import AdminPasswordDialog from '@/components/Manager/AdminPasswordDialog';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Transactions() {
-  const { transactions, barbers, fiadoClients, deleteTransaction } = useApp();
+  const { transactions, barbers, deleteTransaction } = useApp();
   const { toast } = useToast();
   const [filter, setFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
@@ -26,7 +22,7 @@ export default function Transactions() {
   
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const itemsPerPage = 10; // 10 transações por página
 
   // Função para separar e organizar itens da descrição
   const parseTransactionDescription = (description: string, transactionType: string) => {
@@ -113,49 +109,28 @@ export default function Transactions() {
   const endIndex = startIndex + itemsPerPage;
   const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
 
-  // Reset para página 1 quando filtros ou itemsPerPage mudam
+  // Reset para página 1 quando filtros mudam
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, paymentFilter, barberFilter, dateFilter, itemsPerPage]);
+  }, [filter, paymentFilter, barberFilter, dateFilter]);
 
   // Só contabilizar transações completed (incluindo fiados pagos) e aplicar os filtros
   const totalRevenue = filteredTransactions
     .filter(t => t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
+  const todayRevenue = filteredTransactions
+    .filter(t => {
+      if (!t.date || !t.date.toDateString) return false;
+      const transactionDate = t.date.toDateString();
+      const today = new Date().toDateString();
+      return transactionDate === today && t.status === 'completed';
+    })
+    .reduce((sum, t) => sum + t.amount, 0);
 
-  // Calcular valor pendente considerando pagamentos parciais de fiado e filtros aplicados
-  const pendingRevenue = (() => {
-    // Valor das transações pendentes filtradas (não fiado)
-    const nonFiadoPending = filteredTransactions
-      .filter(t => t.status === 'pending' && t.paymentMethod !== 'fiado')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    // Para dívidas de fiado, só incluir se não há filtros de data ou barbeiro aplicados
-    // pois fiadoClients não tem essas informações detalhadas
-    let fiadoPending = 0;
-    
-    // Se não há filtros de data ou barbeiro, incluir todas as dívidas de fiado
-    if (!dateFilter && barberFilter === 'all') {
-      fiadoPending = fiadoClients
-        .reduce((sum, client) => sum + client.totalDebt, 0);
-    } else {
-      // Se há filtros específicos, só incluir dívidas de fiado se há transações de fiado filtradas
-      const fiadoTransactions = filteredTransactions.filter(t => t.paymentMethod === 'fiado');
-      if (fiadoTransactions.length > 0) {
-        // Calcular proporção baseada nas transações de fiado filtradas
-        const totalFiadoAmount = fiadoTransactions.reduce((sum, t) => sum + t.amount, 0);
-        const totalFiadoDebt = fiadoClients.reduce((sum, client) => sum + client.totalDebt, 0);
-        const totalFiadoTransactions = transactions.filter(t => t.paymentMethod === 'fiado').reduce((sum, t) => sum + t.amount, 0);
-        
-        if (totalFiadoTransactions > 0) {
-          fiadoPending = (totalFiadoAmount / totalFiadoTransactions) * totalFiadoDebt;
-        }
-      }
-    }
-    
-    return nonFiadoPending + fiadoPending;
-  })();
+  const pendingRevenue = filteredTransactions
+    .filter(t => t.status === 'pending')
+    .reduce((sum, t) => sum + t.amount, 0);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -213,20 +188,6 @@ export default function Transactions() {
     }
   };
 
-  // Funções para formatação de data (igual ao fiado)
-  const formatDateForInput = (date: Date | undefined) => {
-    if (!date) return "";
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const parseDateFromInput = (dateString: string) => {
-    if (!dateString) return undefined;
-    return new Date(dateString + 'T00:00:00');
-  };
-
   const clearFilters = () => {
     setFilter('all');
     setPaymentFilter('all');
@@ -244,7 +205,7 @@ export default function Transactions() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gray-50 dark:bg-gray-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -254,6 +215,9 @@ export default function Transactions() {
               <div>
                 <p className="text-sm text-muted-foreground">Receita Confirmada</p>
                 <p className="text-xl font-bold text-foreground">R$ {totalRevenue.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {transactions.filter(t => t.status === 'completed').length} transações pagas
+                </p>
               </div>
             </div>
           </CardContent>
@@ -268,11 +232,30 @@ export default function Transactions() {
               <div>
                 <p className="text-sm text-muted-foreground">Pendente</p>
                 <p className="text-xl font-bold text-destructive">R$ {pendingRevenue.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {transactions.filter(t => t.status === 'pending').length} aguardando pagamento
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        <Card className="bg-gray-50 dark:bg-gray-800">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Hoje</p>
+                <p className="text-xl font-bold text-foreground">R$ {todayRevenue.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {transactions.filter(t => t.date.toDateString() === new Date().toDateString()).length} transações hoje
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="bg-gray-50 dark:bg-gray-800">
           <CardContent className="p-4">
@@ -283,6 +266,12 @@ export default function Transactions() {
               <div>
                 <p className="text-sm text-muted-foreground">Total de Transações</p>
                 <p className="text-xl font-bold text-foreground">{filteredTransactions.length}</p>
+                <p className="text-xs text-muted-foreground">
+                  {transactions.length > filteredTransactions.length ? 
+                    `de ${transactions.length} totais` : 
+                    'Todas as transações'
+                  }
+                </p>
               </div>
             </div>
           </CardContent>
@@ -347,30 +336,12 @@ export default function Transactions() {
         <div className="flex-1">
           <div className="space-y-2">
             <Label className="text-sm">Data</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal h-11"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateFilter ? (
-                    format(parseDateFromInput(dateFilter) || new Date(), "dd/MM/yyyy", { locale: ptBR })
-                  ) : (
-                    <span>Selecionar data</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={parseDateFromInput(dateFilter)}
-                  onSelect={(date) => setDateFilter(formatDateForInput(date))}
-                  locale={ptBR}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="h-11"
+            />
           </div>
         </div>
         
@@ -575,26 +546,8 @@ export default function Transactions() {
         )}
 
         {/* Controles de Paginação */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-8">
-          {/* Seletor de itens por página */}
-          <div className="flex items-center gap-2">
-            <Label className="text-sm text-muted-foreground">Itens por página:</Label>
-            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
-              <SelectTrigger className="w-20 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Controles de navegação */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
             <Button
               variant="outline"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -604,12 +557,9 @@ export default function Transactions() {
               Anterior
             </Button>
             
-            <div className="flex flex-col sm:flex-row items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Página {currentPage} de {totalPages}</span>
-              <span className="hidden sm:inline">•</span>
-              <span>{filteredTransactions.length} transações</span>
-              <span className="hidden sm:inline">•</span>
-              <span>Mostrando {startIndex + 1}-{Math.min(endIndex, filteredTransactions.length)}</span>
+              <span>({filteredTransactions.length} transações)</span>
             </div>
             
             <Button
@@ -620,9 +570,8 @@ export default function Transactions() {
             >
               Próxima
             </Button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <AdminPasswordDialog
