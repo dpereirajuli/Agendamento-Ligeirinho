@@ -239,7 +239,6 @@ export default function Transactions() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Transações</h1>
-          <p className="text-muted-foreground">Histórico completo de vendas</p>
         </div>
       </div>
 

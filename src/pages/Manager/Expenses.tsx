@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Receipt, Filter, Calendar, DollarSign, Plus, Trash2 } from 'lucide-react';
+import { Receipt, Filter, Calendar, DollarSign, Plus, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 
 interface Expense {
@@ -30,7 +34,7 @@ export default function Expenses() {
 
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   // Filtrar despesas por data
   const filteredExpenses = expenses.filter(expense => {
@@ -47,10 +51,24 @@ export default function Expenses() {
   const endIndex = startIndex + itemsPerPage;
   const currentExpenses = filteredExpenses.slice(startIndex, endIndex);
 
-  // Reset para página 1 quando filtro muda
+  // Funções para formatação de data (igual ao fiado)
+  const formatDateForInput = (date: Date | undefined) => {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseDateFromInput = (dateString: string) => {
+    if (!dateString) return undefined;
+    return new Date(dateString + 'T00:00:00');
+  };
+
+  // Reset para página 1 quando filtro ou itemsPerPage muda
   useEffect(() => {
     setCurrentPage(1);
-  }, [dateFilter]);
+  }, [dateFilter, itemsPerPage]);
 
   // Carregar despesas do localStorage
   useEffect(() => {
@@ -209,94 +227,116 @@ export default function Expenses() {
       </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <Card className="border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Gastos</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              R$ {totalExpenses.toFixed(2)}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="bg-gray-50 dark:bg-gray-800">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                <DollarSign className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total de Gastos</p>
+                <p className="text-xl font-bold text-destructive">R$ {totalExpenses.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredExpenses.length} despesas
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {filteredExpenses.length} despesas
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gastos Hoje</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              R$ {todayExpenses.toFixed(2)}
+        <Card className="bg-gray-50 dark:bg-gray-800">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Gastos Hoje</p>
+                <p className="text-xl font-bold text-destructive">R$ {todayExpenses.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredExpenses.filter(expense => 
+                    expense.date.toDateString() === new Date().toDateString()
+                  ).length} despesas hoje
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {filteredExpenses.filter(expense => 
-                expense.date.toDateString() === new Date().toDateString()
-              ).length} despesas hoje
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gastos do Mês</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              R$ {thisMonthExpenses.toFixed(2)}
+        <Card className="bg-gray-50 dark:bg-gray-800">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Gastos do Mês</p>
+                <p className="text-xl font-bold text-destructive">R$ {thisMonthExpenses.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredExpenses.filter(expense => {
+                    const expenseDate = expense.date;
+                    const currentDate = new Date();
+                    return expenseDate.getMonth() === currentDate.getMonth() && 
+                           expenseDate.getFullYear() === currentDate.getFullYear();
+                  }).length} despesas este mês
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {filteredExpenses.filter(expense => {
-                const expenseDate = expense.date;
-                const currentDate = new Date();
-                return expenseDate.getMonth() === currentDate.getMonth() && 
-                       expenseDate.getFullYear() === currentDate.getFullYear();
-              }).length} despesas este mês
-            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filtros */}
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Data</Label>
-              <Input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full"
-              />
-            </div>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="space-y-2">
+            <Label className="text-sm">Data</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal h-11"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFilter ? (
+                    format(parseDateFromInput(dateFilter) || new Date(), "dd/MM/yyyy", { locale: ptBR })
+                  ) : (
+                    <span>Selecionar data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={parseDateFromInput(dateFilter)}
+                  onSelect={(date) => setDateFilter(formatDateForInput(date))}
+                  locale={ptBR}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
-          
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center mt-4 pt-4 border-t gap-2">
-            <div className="text-sm text-muted-foreground">
-              Mostrando {filteredExpenses.length} de {expenses.length} gastos
-            </div>
-            <button
-              onClick={clearFilters}
-              className="text-sm text-foreground hover:text-muted-foreground underline self-start md:self-auto"
-            >
-              Limpar filtros
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        {/* Botão limpar filtros */}
+        {dateFilter && (
+          <Button 
+            variant="outline" 
+            onClick={clearFilters}
+            className="w-full sm:w-auto h-11 whitespace-nowrap"
+          >
+            Limpar Filtros
+          </Button>
+        )}
+      </div>
+      
+      {/* Contador de resultados */}
+      {dateFilter && (
+        <p className="text-sm text-muted-foreground">
+          {filteredExpenses.length} gasto(s) encontrado(s)
+        </p>
+      )}
 
       {/* Lista de gastos */}
       <div className="space-y-4">
@@ -315,34 +355,38 @@ export default function Expenses() {
         ) : (
           <div className="space-y-3">
             {currentExpenses.map(expense => (
-              <Card key={expense.id} className="border-border">
+              <Card key={expense.id} className="border-border hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground mb-2">
-                        {expense.description}
-                      </p>
-                      
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                        <span>Por: {expense.user}</span>
-                        <span>{expense.date.toLocaleDateString()}</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground mb-2">
+                          {expense.description}
+                        </p>
+                        
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                          <span>Por: {expense.user}</span>
+                          <span>{expense.date.toLocaleDateString()}</span>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
+                      
                       <div className="text-right">
                         <p className="text-xl font-bold text-destructive">
                           R$ {expense.amount.toFixed(2)}
                         </p>
                       </div>
-                      
+                    </div>
+                    
+                    {/* Botão de deletar */}
+                    <div className="flex justify-end pt-2 border-t border-border">
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDelete(expense.id)}
-                        className=""
+                        className="text-xs"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Excluir
                       </Button>
                     </div>
                   </div>
@@ -353,36 +397,53 @@ export default function Expenses() {
         )}
 
         {/* Controles de Paginação */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-8">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="flex items-center gap-2"
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-8">
+          {/* Seletor de itens por página */}
+          <div className="flex items-center gap-2">
+            <Label className="text-sm text-muted-foreground">Itens por página:</Label>
+            <select 
+              value={itemsPerPage} 
+              onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+              className="w-20 h-8 px-2 border border-border rounded-md bg-background text-sm"
             >
-              Anterior
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                ({filteredExpenses.length} gastos)
-              </span>
-            </div>
-            
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="flex items-center gap-2"
-            >
-              Próxima
-            </Button>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
           </div>
-        )}
+
+          {/* Controles de navegação */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="w-full sm:w-auto"
+              >
+                Anterior
+              </Button>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-2 text-sm text-muted-foreground">
+                <span>Página {currentPage} de {totalPages}</span>
+                <span className="hidden sm:inline">•</span>
+                <span>{filteredExpenses.length} gastos</span>
+                <span className="hidden sm:inline">•</span>
+                <span>Mostrando {startIndex + 1}-{Math.min(endIndex, filteredExpenses.length)}</span>
+              </div>
+              
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="w-full sm:w-auto"
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

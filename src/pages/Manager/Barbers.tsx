@@ -537,13 +537,6 @@ export default function Barbers() {
                         <h3 className="text-lg font-semibold text-foreground min-w-0 flex-1">
                           {barber.name}
                         </h3>
-                        
-                        <div className="flex items-center space-x-1 text-sm">
-                          <span className="text-muted-foreground">Profissional:</span>
-                          <span className="font-medium text-foreground">
-                            Barbeiro
-                          </span>
-                        </div>
                       </div>
                     </div>
 

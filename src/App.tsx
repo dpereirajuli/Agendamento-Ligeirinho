@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Layout as ManagerLayout } from "@/components/Manager/Layout";
 import { ManagerAuthGate } from "@/components/Manager/ManagerAuthGate";
 import { LazyWrapper } from "@/components/LazyWrapper";
+import { AppLoading } from "@/components/AppLoading";
 import { queryClient } from "@/lib/queryClient";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
 
@@ -37,13 +38,14 @@ const App = () => {
   useServiceWorker();
   
   return (
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+    <AppLoading>
+      <HelmetProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
           <Routes>
             {/* Rotas públicas */}
             <Route path="/" element={<Home />} />
@@ -95,10 +97,11 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
             </BrowserRouter>
-          </TooltipProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </HelmetProvider>
+            </TooltipProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </HelmetProvider>
+    </AppLoading>
   );
 };
 
