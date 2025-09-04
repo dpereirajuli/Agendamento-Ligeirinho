@@ -1,0 +1,107 @@
+/* Otimizações de performance CSS */
+
+/* Otimizações de renderização */
+* {
+  box-sizing: border-box;
+}
+
+/* Otimizações de animações */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Otimizações de scroll */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Otimizações de fontes */
+@font-face {
+  font-display: swap;
+}
+
+/* Otimizações de imagens */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Otimizações de layout */
+.contain-layout {
+  contain: layout;
+}
+
+.contain-paint {
+  contain: paint;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+/* Otimizações de transformações */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-scroll {
+  will-change: scroll-position;
+}
+
+/* Otimizações de GPU */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Otimizações de texto */
+.text-optimized {
+  text-rendering: optimizeSpeed;
+  font-smooth: never;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Otimizações de seleção */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Otimizações de foco */
+.focus-visible-only:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Otimizações de responsividade */
+@media (max-width: 768px) {
+  .mobile-optimized {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+/* Otimizações de impressão */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
