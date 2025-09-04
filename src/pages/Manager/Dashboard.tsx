@@ -9,14 +9,13 @@ import {
   CalendarDays,
   Banknote,
   Search,
-  Moon,
-  Sun,
   CalendarIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApp } from "@/contexts/AppContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Card,
   CardContent,
@@ -70,30 +69,106 @@ interface Service {
   price: number;
 }
 
+// ================== Componentes Memoizados ==================
+const StatCard = memo(({ 
+  title, 
+  value, 
+  subtitle, 
+  icon: Icon, 
+  iconColor 
+}: { 
+  title: string; 
+  value: string; 
+  subtitle: string; 
+  icon: any; 
+  iconColor: string; 
+}) => (
+  <Card className="shadow-sm min-h-[120px]">
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{title}</span>
+          <Icon className={`h-4 w-4 ${iconColor}`} />
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold">{value}</div>
+          <p className="text-xs opacity-70">{subtitle}</p>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+));
+
+StatCard.displayName = 'StatCard';
+
+const LowStockCard = memo(({ 
+  lowStockProducts, 
+  isStockExpanded, 
+  setIsStockExpanded 
+}: { 
+  lowStockProducts: any[]; 
+  isStockExpanded: boolean; 
+  setIsStockExpanded: (value: boolean | ((prev: boolean) => boolean)) => void; 
+}) => (
+  <motion.div layout className="min-h-[120px]">
+    <Card className="shadow-sm h-full">
+      <CardContent className="p-6">
+        <div 
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setIsStockExpanded((p) => !p)}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Estoque Baixo</span>
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="text-right flex items-center gap-2">
+            <div>
+              <div className="text-2xl font-bold">{lowStockProducts.length}</div>
+              <p className="text-xs opacity-70">
+                {lowStockProducts.length > 0
+                  ? "Clique para ver"
+                  : "Nenhum produto"}
+              </p>
+            </div>
+            {lowStockProducts.length > 0 && (isStockExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+          </div>
+        </div>
+        <AnimatePresence initial={false}>
+          {isStockExpanded && lowStockProducts.length > 0 && (
+            <motion.div
+              key="stock"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="mt-4"
+            >
+              <div className="space-y-2">
+                {lowStockProducts.map((p: any) => (
+                  <div key={p.id} className="flex justify-between items-center text-sm border-b border-border/20 pb-2 last:border-0">
+                    <span className="font-medium">{p.name}</span>
+                    <span className="text-rose-500">{p.stock} un.</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CardContent>
+    </Card>
+  </motion.div>
+));
+
+LowStockCard.displayName = 'LowStockCard';
+
 export default function Dashboard() {
   const { products, transactions, barbers, loading } = useApp();
+  const { isDark, toggleTheme } = useTheme();
   const { toast } = useToast();
   const qc = useQueryClient();
 
   // ================== Estados ==================
-  const [darkMode, setDarkMode] = useState(true);
   const [isStockExpanded, setIsStockExpanded] = useState(false);
-  
-  useEffect(() => {
-    const prefersDark = localStorage.getItem("prefers-dark");
-    const startDark = prefersDark ? prefersDark === "1" : true;
-    setDarkMode(startDark);
-  }, []);
-  useEffect(() => {
-    const root = document.documentElement;
-    if (darkMode) {
-      root.classList.add("dark");
-      localStorage.setItem("prefers-dark", "1");
-    } else {
-      root.classList.remove("dark");
-      localStorage.setItem("prefers-dark", "0");
-    }
-  }, [darkMode]);
 
   // ================== Filtros / busca ==================
   const todayStr = useMemo(() => {
@@ -134,7 +209,9 @@ export default function Dashboard() {
   const { data: services = [], isLoading: loadingServices } = useQuery({
     queryKey: ["services"],
     queryFn: fetchServices,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30, // 30 minutos
+    refetchOnWindowFocus: false,
   });
 
   const {
@@ -147,6 +224,8 @@ export default function Dashboard() {
       { filterStartDate, filterEndDate, filterStatus, todayStr, isAnyFilterActive },
     ],
     queryFn: fetchAppointments,
+    staleTime: 1000 * 60 * 2, // 2 minutos
+    gcTime: 1000 * 60 * 10, // 10 minutos
     refetchOnWindowFocus: false,
   });
 
@@ -160,20 +239,20 @@ export default function Dashboard() {
     []
   );
 
-  const getServices = (serviceId: string) => {
+  const getServices = useCallback((serviceId: string) => {
     if (!serviceId) return [] as Service[];
     const ids = serviceId.split(",").map((s) => String(s).trim());
     return ids
       .map((id) => services.find((s) => String(s.id) === id))
       .filter(Boolean) as Service[];
-  };
+  }, [services]);
 
-  const getBarberName = (barberId: number | string) => {
+  const getBarberName = useCallback((barberId: number | string) => {
     const id = String(barberId);
-    return barbers.find((b: any) => String(b.id) === id)?.name || "Desconhecido";
-  };
+    return (barbers as any[]).find((b: any) => String(b.id) === id)?.name || "Desconhecido";
+  }, [barbers]);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     const [year, month, day] = dateString.split("-");
     const meses = [
       "jan",
@@ -190,37 +269,41 @@ export default function Dashboard() {
       "dez",
     ];
     return `${day} de ${meses[parseInt(month, 10) - 1]}.`;
-  };
+  }, []);
 
-  const cleanPhone = (phone: string) => `+55${phone.replace(/\D/g, "")}`;
+  const cleanPhone = useCallback((phone: string) => `+55${phone.replace(/\D/g, "")}`, []);
 
   // ================== Funções para calendário ==================
-  const formatDateForInput = (date: Date | undefined) => {
+  const formatDateForInput = useCallback((date: Date | undefined) => {
     if (!date) return "";
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
+  }, []);
 
-  const parseDateFromInput = (dateString: string) => {
+  const parseDateFromInput = useCallback((dateString: string) => {
     if (!dateString) return undefined;
     return new Date(dateString + 'T00:00:00');
-  };
+  }, []);
 
-  const totalAppointments = appointments.length;
+  const totalAppointments = useMemo(() => (appointments as Appointment[]).length, [appointments]);
+  const confirmedAppointments = useMemo(() => 
+    (appointments as Appointment[]).filter((a) => a.status === "confirmed").length, 
+    [appointments]
+  );
   const appointmentsRevenue = useMemo(() => {
-    return appointments.reduce((sum, a) => {
+    return (appointments as Appointment[]).reduce((sum, a) => {
       const list = getServices(a.service_id);
       const value = list.reduce((s, srv) => s + (srv?.price || 0), 0);
       return sum + value;
     }, 0);
-  }, [appointments, services]);
+  }, [appointments, getServices]);
 
   // ================== Transações do dia ==================
   const todayTransactions = useMemo(
     () =>
-      transactions.filter(
+      (transactions as any[]).filter(
         (t: any) => {
           if (!t.date || !t.date.toDateString) return false;
           const transactionDate = t.date.toDateString();
@@ -236,7 +319,7 @@ export default function Dashboard() {
   );
 
   const lowStockProducts = useMemo(
-    () => products.filter((p: any) => p.stock <= p.minStock),
+    () => (products as any[]).filter((p: any) => p.stock <= p.minStock),
     [products]
   );
 
@@ -301,7 +384,7 @@ export default function Dashboard() {
   });
 
   // ================== Notificar via WhatsApp ==================
-  const notify = (a: Appointment) => {
+  const notify = useCallback((a: Appointment) => {
     const list = getServices(a.service_id);
     let names = "";
     if (list.length === 1) names = list[0].type;
@@ -313,7 +396,7 @@ export default function Dashboard() {
     )} às ${a.start_time} foi confirmado.`;
     const url = `https://wa.me/${cleanPhone(a.phone)}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
-  };
+  }, [getServices, formatDate, cleanPhone]);
 
   // ================== UI ==================
   if (loading) {
@@ -325,14 +408,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className={`transition-colors ${
-      darkMode ? "bg-slate-900 text-slate-50" : "bg-slate-50 text-slate-900"
-    }`}>
+    <div className="transition-colors">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm opacity-70">Visão geral do seu negócio</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Visão geral do seu negócio</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -344,109 +425,40 @@ export default function Dashboard() {
             <RefreshCw className={`h-4 w-4 ${fetchingAppointments ? "animate-spin" : ""}`} />
             Atualizar
           </Button>
-          <Button onClick={() => setDarkMode((p) => !p)} variant="ghost" size="sm" className="gap-2">
-            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            {darkMode ? "Claro" : "Escuro"}
-          </Button>
         </div>
       </div>
 
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 items-start">
-        <Card className="shadow-sm min-h-[120px]">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Vendas Hoje</span>
-                <DollarSign className="h-4 w-4 text-emerald-500" />
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">{currency.format(todayRevenue)}</div>
-                <p className="text-xs opacity-70">{todayTransactions.length} transações</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Vendas Hoje"
+          value={currency.format(todayRevenue)}
+          subtitle={`${todayTransactions.length} transações`}
+          icon={DollarSign}
+          iconColor="text-emerald-500"
+        />
 
-        <motion.div layout className="min-h-[120px]">
-          <Card className="shadow-sm h-full">
-            <CardContent className="p-6">
-              <div 
-                className="flex items-center justify-between cursor-pointer"
-                onClick={() => setIsStockExpanded((p) => !p)}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Estoque Baixo</span>
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                </div>
-                <div className="text-right flex items-center gap-2">
-                  <div>
-                    <div className="text-2xl font-bold">{lowStockProducts.length}</div>
-                    <p className="text-xs opacity-70">
-                      {lowStockProducts.length > 0
-                        ? "Clique para ver"
-                        : "Nenhum produto"}
-                    </p>
-                  </div>
-                  {lowStockProducts.length > 0 && (isStockExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
-                </div>
-              </div>
-              <AnimatePresence initial={false}>
-                {isStockExpanded && lowStockProducts.length > 0 && (
-                  <motion.div
-                    key="stock"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="mt-4"
-                  >
-                    <div className="space-y-2">
-                      {lowStockProducts.map((p: any) => (
-                        <div key={p.id} className="flex justify-between items-center text-sm border-b border-border/20 pb-2 last:border-0">
-                          <span className="font-medium">{p.name}</span>
-                          <span className="text-rose-500">{p.stock} un.</span>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <LowStockCard
+          lowStockProducts={lowStockProducts}
+          isStockExpanded={isStockExpanded}
+          setIsStockExpanded={setIsStockExpanded}
+        />
 
-        <Card className="shadow-sm min-h-[120px]">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Agendamentos Hoje</span>
-                <Calendar className="h-4 w-4 text-sky-500" />
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">{totalAppointments}</div>
-                <p className="text-xs opacity-70">
-                  {appointments.filter((a) => a.status === "confirmed").length} confirmados
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Agendamentos Hoje"
+          value={totalAppointments.toString()}
+          subtitle={`${confirmedAppointments} confirmados`}
+          icon={Calendar}
+          iconColor="text-sky-500"
+        />
 
-        <Card className="shadow-sm min-h-[120px]">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Receita Agendamentos</span>
-                <Banknote className="h-4 w-4 text-green-500" />
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold">{currency.format(appointmentsRevenue)}</div>
-                <p className="text-xs opacity-70">{isAnyFilterActive ? "no período filtrado" : "de hoje"}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Receita Agendamentos"
+          value={currency.format(appointmentsRevenue)}
+          subtitle={isAnyFilterActive ? "no período filtrado" : "de hoje"}
+          icon={Banknote}
+          iconColor="text-green-500"
+        />
       </div>
 
       {/* Filtros */}
@@ -550,6 +562,7 @@ export default function Dashboard() {
                 setSearchClient("");
                 qc.invalidateQueries({ queryKey: ["appointments"] });
               }}
+              className="border border-border"
             >
               Limpar
             </Button>
@@ -653,6 +666,7 @@ export default function Dashboard() {
                             size="sm"
                             variant="outline"
                             onClick={() => updateStatus.mutate({ id: a.id, status: "pending" })}
+                            className="border-yellow-500 text-yellow-600 bg-yellow-50 hover:bg-yellow-100 hover:text-yellow-700 dark:border-yellow-400 dark:text-yellow-400 dark:bg-transparent dark:hover:bg-yellow-900/20 dark:hover:text-yellow-300"
                           >
                             Pendente
                           </Button>
@@ -665,7 +679,7 @@ export default function Dashboard() {
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border border-border">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -692,10 +706,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Rodapé leve */}
-      <div className="text-[11px] opacity-60 text-center mt-6">
-        Paleta: <span className="font-medium">Slate</span> com acentos <span className="font-medium">Emerald/Amber/Sky/Rose</span>. Suporta <span className="font-medium">modo claro/escuro</span>.
-      </div>
+
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 
 interface OptimizedImageProps {
   src: string;
@@ -7,44 +7,85 @@ interface OptimizedImageProps {
   loading?: 'lazy' | 'eager';
   priority?: boolean;
   fallback?: string;
+  width?: number;
+  height?: number;
+  sizes?: string;
 }
 
-export function OptimizedImage({ 
+export const OptimizedImage = memo(function OptimizedImage({ 
   src, 
   alt, 
   className = '', 
   loading = 'lazy',
   priority = false,
-  fallback = '/logo.webp'
+  fallback = '/logo.webp',
+  width,
+  height,
+  sizes
 }: OptimizedImageProps) {
-  const [imageSrc, setImageSrc] = useState(src);
+  const [imageSrc, setImageSrc] = useState(priority ? src : '');
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isInView, setIsInView] = useState(priority);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    setImageSrc(src);
-    setIsLoaded(false);
-    setHasError(false);
-  }, [src]);
+    if (priority) {
+      setImageSrc(src);
+      return;
+    }
 
-  const handleLoad = () => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          setImageSrc(src);
+          observer.disconnect();
+        }
+      },
+      { 
+        rootMargin: '50px',
+        threshold: 0.1 
+      }
+    );
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [src, priority]);
+
+  useEffect(() => {
+    if (isInView) {
+      setImageSrc(src);
+      setIsLoaded(false);
+      setHasError(false);
+    }
+  }, [src, isInView]);
+
+  const handleLoad = useCallback(() => {
     setIsLoaded(true);
-  };
+  }, []);
 
-  const handleError = () => {
+  const handleError = useCallback(() => {
     if (imageSrc !== fallback) {
       setImageSrc(fallback);
       setHasError(true);
     }
-  };
+  }, [imageSrc, fallback]);
 
   return (
     <img
+      ref={imgRef}
       src={imageSrc}
       alt={alt}
       className={`${className} ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       loading={priority ? 'eager' : loading}
       decoding="async"
+      width={width}
+      height={height}
+      sizes={sizes}
       onLoad={handleLoad}
       onError={handleError}
       style={{
@@ -53,4 +94,4 @@ export function OptimizedImage({
       }}
     />
   );
-}
+});
