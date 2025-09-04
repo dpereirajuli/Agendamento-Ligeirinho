@@ -489,3 +489,40 @@
   }
 }
 
+/* Esconder barra de rolagem para carrossel */
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+.overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Otimizações de performance para carrossel */
+.carousel-container {
+  will-change: scroll-position;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  -webkit-perspective: 1000;
+  -webkit-overflow-scrolling: touch;
+}
+
+.carousel-item {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+}
+
+/* Melhora a fluidez do scroll em dispositivos móveis */
+@media (max-width: 768px) {
+  .carousel-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, Phone, MessageSquare, User, ChevronLeft, ChevronRight, CheckCircle, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,14 +17,14 @@ function BackButton({ onClick, children }: { onClick: () => void; children: Reac
     <button
       type="button"
       onClick={onClick}
-      className="bg-amber-50 text-center w-48 rounded-2xl h-14 relative text-black text-xl font-semibold border-4 border-amber-200 group"
+      className="bg-amber-50 text-center w-32 rounded-xl h-10 relative text-black text-sm font-semibold border-2 border-amber-200 group"
     >
       <div
-        className="bg-amber-500 rounded-xl h-12 w-1/4 grid place-items-center absolute left-0 top-0 group-hover:w-full z-10 duration-500"
+        className="bg-amber-500 rounded-lg h-8 w-1/4 grid place-items-center absolute left-0 top-0 group-hover:w-full z-10 duration-500"
       >
         <svg
-          width="25px"
-          height="25px"
+          width="16px"
+          height="16px"
           viewBox="0 0 1024 1024"
           xmlns="http://www.w3.org/2000/svg"
         >
@@ -38,7 +38,7 @@ function BackButton({ onClick, children }: { onClick: () => void; children: Reac
           ></path>
         </svg>
       </div>
-      <p className="translate-x-4">{children}</p>
+      <p className="translate-x-2">{children}</p>
     </button>
   );
 }
@@ -50,14 +50,14 @@ function ContinueButton({ onClick, children, disabled }: { onClick: () => void; 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="bg-green-50 text-center w-48 rounded-2xl h-14 relative text-black text-xl font-semibold border-4 border-green-200 group disabled:opacity-50 disabled:cursor-not-allowed"
+      className="bg-green-50 text-center w-32 rounded-xl h-10 relative text-black text-sm font-semibold border-2 border-green-200 group disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <div
-        className="bg-green-500 rounded-xl h-12 w-1/4 grid place-items-center absolute right-0 top-0 group-hover:w-full z-10 duration-500"
+        className="bg-green-500 rounded-lg h-8 w-1/4 grid place-items-center absolute right-0 top-0 group-hover:w-full z-10 duration-500"
       >
         <svg
-          width="25px"
-          height="25px"
+          width="16px"
+          height="16px"
           viewBox="0 0 1024 1024"
           xmlns="http://www.w3.org/2000/svg"
         >
@@ -71,7 +71,7 @@ function ContinueButton({ onClick, children, disabled }: { onClick: () => void; 
           ></path>
         </svg>
       </div>
-      <p className="translate-x-[-1rem]">{children}</p>
+      <p className="translate-x-[-0.5rem]">{children}</p>
     </button>
   );
 }
@@ -113,7 +113,10 @@ function generateICS(booking: any, duration: number) {
 export default function Booking() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date();
+    return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+  });
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [bookingData, setBookingData] = useState<BookingData>({
     clientName: '',
@@ -133,6 +136,16 @@ export default function Booking() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [services, setServices] = useState<Service[]>([]);
   const [lastBooking, setLastBooking] = useState<any | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para o carrossel de horários
+  const [isDraggingTimes, setIsDraggingTimes] = useState(false);
+  const [startXTimes, setStartXTimes] = useState(0);
+  const [scrollLeftTimes, setScrollLeftTimes] = useState(0);
+  const timesCarouselRef = useRef<HTMLDivElement>(null);
 
 
   const [dayAvailability, setDayAvailability] = useState<Record<string, boolean>>({});
@@ -141,6 +154,10 @@ export default function Booking() {
   useEffect(() => {
     try {
       fetchData();
+      // Garantir que a data atual esteja sempre selecionada
+      const today = new Date();
+      const todayStr = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+      setSelectedDate(todayStr);
     } catch (error) {
       console.error('Error in initial useEffect:', error);
     }
@@ -408,17 +425,24 @@ export default function Booking() {
 
     const now = new Date();
     const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+    
+    // Calcular a data limite (30 dias a partir de hoje)
+    const maxDate = new Date(now);
+    maxDate.setDate(maxDate.getDate() + 30);
+    const maxDateStr = [maxDate.getFullYear(), String(maxDate.getMonth() + 1).padStart(2, '0'), String(maxDate.getDate()).padStart(2, '0')].join('-');
 
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const dateStr = [month.getFullYear(), String(month.getMonth() + 1).padStart(2, '0'), String(d).padStart(2, '0')].join('-');
       const isTodayOrFuture = dateStr >= today;
+      const isWithin30Days = dateStr <= maxDateStr;
       const dayOfWeek = new Date(month.getFullYear(), month.getMonth(), d).getDay();
       let available = false;
       
-      if (selectedBarber && selectedServices.length > 0) {
-        available = dayAvailability[dateStr] ?? false;
-      } else if (selectedBarber && selectedServices.length === 0) {
-        if (isTodayOrFuture) {
+      // Só permite datas dentro do período de 30 dias
+      if (isTodayOrFuture && isWithin30Days) {
+        if (selectedBarber && selectedServices.length > 0) {
+          available = dayAvailability[dateStr] ?? false;
+        } else if (selectedBarber && selectedServices.length === 0) {
           if (selectedBarber === '9fba1488-e030-45a5-bba4-4146db9b6a22') {
             available = true;
           } else if (selectedBarber === 'f163d69e-b874-4c19-8868-9ce96e6c83f7') {
@@ -428,9 +452,9 @@ export default function Booking() {
           } else {
             available = [1, 2, 3, 4, 5, 6].includes(dayOfWeek);
           }
+        } else if (!selectedBarber) {
+          available = [1, 2, 3, 4, 5, 6].includes(dayOfWeek);
         }
-      } else if (!selectedBarber) {
-        available = isTodayOrFuture && [1, 2, 3, 4, 5, 6].includes(dayOfWeek);
       }
       
       if (selectedBarber && selectedServices.length > 0 && Object.keys(dayAvailability).length === 0) {
@@ -531,7 +555,10 @@ export default function Booking() {
       // reset
       setSelectedServices([]);
       setSelectedBarber(null);
-      setSelectedDate('');
+      // Manter a data atual selecionada após o agendamento
+      const today = new Date();
+      const todayStr = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+      setSelectedDate(todayStr);
       setSelectedTime('');
       
       setBookingData({ clientName: '', service: '', barberId: '', date: '', time: '', phone: '', notes: '' });
@@ -569,7 +596,10 @@ export default function Booking() {
     // Limpar dados baseado no step de destino
     if (step <= 2) {
       // Se voltando para serviços ou barbeiro, limpa tudo que vem depois
-      setSelectedDate('');
+      // Manter a data atual selecionada
+      const today = new Date();
+      const todayStr = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+      setSelectedDate(todayStr);
       setSelectedTime('');
       setBookingData((prev) => ({ ...prev, clientName: '', phone: '' }));
     }
@@ -587,8 +617,132 @@ export default function Booking() {
     console.log('Step changed to:', step);
   };
 
-  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const prevMonth = () => {
+    const newMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Só permite voltar se não for o mês atual
+    if (newMonth >= currentMonthStart) {
+      setCurrentMonth(newMonth);
+    }
+  };
+  
+  const nextMonth = () => {
+    const newMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+    const now = new Date();
+    const maxDate = new Date(now);
+    maxDate.setDate(maxDate.getDate() + 30);
+    const maxMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+    
+    // Só permite avançar se não ultrapassar o período de 30 dias
+    if (newMonth <= maxMonth) {
+      setCurrentMonth(newMonth);
+    }
+  };
+
+  // Funções otimizadas para drag/swipe do carrossel
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!carouselRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - carouselRef.current.offsetLeft);
+    setScrollLeft(carouselRef.current.scrollLeft);
+    carouselRef.current.style.scrollBehavior = 'auto'; // Desabilita scroll suave durante drag
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !carouselRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - carouselRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; // Velocidade reduzida para mais fluidez
+    carouselRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUp = () => {
+    if (!carouselRef.current) return;
+    setIsDragging(false);
+    carouselRef.current.style.scrollBehavior = 'smooth'; // Reabilita scroll suave
+  };
+
+  const handleMouseLeave = () => {
+    if (!carouselRef.current) return;
+    setIsDragging(false);
+    carouselRef.current.style.scrollBehavior = 'smooth';
+  };
+
+  // Touch events otimizados para mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!carouselRef.current) return;
+    setIsDragging(true);
+    setStartX(e.touches[0].pageX - carouselRef.current.offsetLeft);
+    setScrollLeft(carouselRef.current.scrollLeft);
+    carouselRef.current.style.scrollBehavior = 'auto';
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !carouselRef.current) return;
+    e.preventDefault();
+    const x = e.touches[0].pageX - carouselRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; // Velocidade reduzida
+    carouselRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleTouchEnd = () => {
+    if (!carouselRef.current) return;
+    setIsDragging(false);
+    carouselRef.current.style.scrollBehavior = 'smooth';
+  };
+
+  // Funções para drag/swipe do carrossel de horários
+  const handleTimesMouseDown = (e: React.MouseEvent) => {
+    if (!timesCarouselRef.current) return;
+    setIsDraggingTimes(true);
+    setStartXTimes(e.pageX - timesCarouselRef.current.offsetLeft);
+    setScrollLeftTimes(timesCarouselRef.current.scrollLeft);
+    timesCarouselRef.current.style.scrollBehavior = 'auto';
+  };
+
+  const handleTimesMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingTimes || !timesCarouselRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - timesCarouselRef.current.offsetLeft;
+    const walk = (x - startXTimes) * 1.5;
+    timesCarouselRef.current.scrollLeft = scrollLeftTimes - walk;
+  };
+
+  const handleTimesMouseUp = () => {
+    if (!timesCarouselRef.current) return;
+    setIsDraggingTimes(false);
+    timesCarouselRef.current.style.scrollBehavior = 'smooth';
+  };
+
+  const handleTimesMouseLeave = () => {
+    if (!timesCarouselRef.current) return;
+    setIsDraggingTimes(false);
+    timesCarouselRef.current.style.scrollBehavior = 'smooth';
+  };
+
+  const handleTimesTouchStart = (e: React.TouchEvent) => {
+    if (!timesCarouselRef.current) return;
+    setIsDraggingTimes(true);
+    setStartXTimes(e.touches[0].pageX - timesCarouselRef.current.offsetLeft);
+    setScrollLeftTimes(timesCarouselRef.current.scrollLeft);
+    timesCarouselRef.current.style.scrollBehavior = 'auto';
+  };
+
+  const handleTimesTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingTimes || !timesCarouselRef.current) return;
+    e.preventDefault();
+    const x = e.touches[0].pageX - timesCarouselRef.current.offsetLeft;
+    const walk = (x - startXTimes) * 1.5;
+    timesCarouselRef.current.scrollLeft = scrollLeftTimes - walk;
+  };
+
+  const handleTimesTouchEnd = () => {
+    if (!timesCarouselRef.current) return;
+    setIsDraggingTimes(false);
+    timesCarouselRef.current.style.scrollBehavior = 'smooth';
+  };
 
 
 
@@ -652,7 +806,6 @@ export default function Booking() {
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-6 sm:mb-8 lg:mb-12 px-4">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-main mb-2 sm:mb-3 lg:mb-4">Agende seu Horário</h1>
-                <p className="text-sm sm:text-base lg:text-xl text-text-muted">Siga as etapas para agendar seu horário de forma simples e rápida</p>
               </div>
 
               {/* Stepper responsivo */}
@@ -704,21 +857,14 @@ export default function Booking() {
                       {currentStep === 1 && (
                         <div key="step-1">
                         <Card className="bg-card-bg border-0 shadow-lg">
-                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
-                            <CardTitle className="flex items-center text-xl font-semibold text-text-main">
-                              <Scissors className="h-5 w-5 text-secondary-gold mr-2" />
-                              Selecione os Serviços
-                            </CardTitle>
-                              <p className="text-sm text-text-muted mt-2">Você pode selecionar múltiplos serviços para o mesmo agendamento</p>
-                          </CardHeader>
+        
                             <CardContent className="p-4 sm:p-6">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                              <div className="space-y-3">
                               {services.map((service) => (
-                                <Button
+                                <div
                                   key={service.id}
-                                  variant="outline"
                                   className={cn(
-                                    'flex flex-col items-start p-4 text-left h-auto transition-all duration-200 border-2',
+                                    'flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all duration-200',
                                     selectedServices.includes(service.id)
                                         ? 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg'
                                       : 'bg-white text-text-main border-gray-200 hover:border-secondary-gold hover:bg-secondary-gold/5 hover:text-text-main hover:shadow-md'
@@ -728,12 +874,24 @@ export default function Booking() {
                                   }}
                                   aria-label={`Selecionar ${service.type}`}
                                 >
-                                  <span className="font-semibold text-lg">{service.type}</span>
-                                  <div className="text-sm mt-2 opacity-80">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-700 mr-2">{service.duration} min</span>
-                                      <span className="font-bold text-lg text-secondary-gold">R$ {service.price}</span>
+                                  <div className="flex items-center space-x-3">
+                                    <div className={cn(
+                                      'w-5 h-5 rounded border-2 flex items-center justify-center',
+                                      selectedServices.includes(service.id)
+                                        ? 'bg-white border-white'
+                                        : 'border-gray-300'
+                                    )}>
+                                      {selectedServices.includes(service.id) && (
+                                        <CheckCircle className="w-3 h-3 text-primary-petroleum" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <span className="font-semibold text-lg">{service.type}</span>
+                                      <span className="text-sm opacity-80 ml-2">({service.duration} min)</span>
+                                    </div>
                                   </div>
-                                </Button>
+                                  <span className="font-bold text-lg text-secondary-gold">R$ {service.price}</span>
+                                </div>
                               ))}
                             </div>
                           </CardContent>
@@ -752,22 +910,15 @@ export default function Booking() {
                       {currentStep === 2 && (
                         <div key="step-2">
                           <Card className="bg-card-bg border-0 shadow-lg">
-                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
-                              <CardTitle className="flex items-center text-xl font-semibold text-text-main">
-                                <User className="h-5 w-5 text-success-soft mr-2" />
-                                Selecione o Barbeiro
-                              </CardTitle>
-                            </CardHeader>
                             <CardContent className="p-4 sm:p-6">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                              <div className="space-y-3">
                                 {barbers.map((barber) => (
-                                  <Button
+                                  <div
                                     key={barber.id}
-                                    variant="outline"
                                     className={cn(
-                                      'w-full flex flex-col items-center p-6 transition-all duration-200 border-2 h-auto',
+                                      'flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all duration-200',
                                       selectedBarber === barber.id 
-                                        ? 'bg-success-soft text-white border-success-soft shadow-lg transform scale-105' 
+                                        ? 'bg-success-soft text-white border-success-soft shadow-lg' 
                                         : 'bg-white text-text-main border-gray-200 hover:border-success-soft hover:bg-success-soft/5 hover:text-text-main hover:shadow-md'
                                     )}
                                     onClick={() => {
@@ -776,12 +927,28 @@ export default function Booking() {
                                     }}
                                     aria-label={`Selecionar barbeiro ${barber.name}`}
                                   >
-                                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-3">
-                                      <User className="w-8 h-8 text-gray-600" />
+                                    <div className="flex items-center space-x-3">
+                                      <div className={cn(
+                                        'w-5 h-5 rounded border-2 flex items-center justify-center',
+                                        selectedBarber === barber.id
+                                          ? 'bg-white border-white'
+                                          : 'border-gray-300'
+                                      )}>
+                                        {selectedBarber === barber.id && (
+                                          <CheckCircle className="w-3 h-3 text-success-soft" />
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-3">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
+                                          <User className="w-5 h-5 text-gray-600" />
+                                        </div>
+                                        <div>
+                                          <span className="font-semibold text-lg">{barber.name}</span>
+                                          {barber.specialty && <span className="text-sm opacity-80 ml-2">({barber.specialty})</span>}
+                                        </div>
+                                      </div>
                                     </div>
-                                    <span className="font-semibold text-lg mb-1">{barber.name}</span>
-                                    {barber.specialty && <span className="text-sm opacity-80">{barber.specialty}</span>}
-                                  </Button>
+                                  </div>
                                 ))}
                               </div>
                             </CardContent>
@@ -803,14 +970,8 @@ export default function Booking() {
                       {currentStep === 3 && (
                         <div key="step-3">
                           <Card className="bg-card-bg border-0 shadow-lg">
-                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
-                              <CardTitle className="flex items-center text-xl font-semibold text-text-main">
-                                <Calendar className="h-5 w-5 text-primary-petroleum mr-2" />
-                                Selecione a Data e o Horário
-                              </CardTitle>
-                            </CardHeader>
                             <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                              {/* Disponibilidade do mês - carrega automaticamente */}
+                              {/* Carrossel de datas */}
                               {Object.keys(dayAvailability).length === 0 ? (
                                 <div className="text-center py-8">
                                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-petroleum mx-auto mb-4"></div>
@@ -823,53 +984,106 @@ export default function Booking() {
                                 </div>
                               ) : (
                                 <>
-                                  <div className="flex justify-between items-center">
-                                <Button
-                                  variant="ghost"
-                                  onClick={prevMonth}
+                                  <div className="flex justify-between items-center mb-2">
+                                    <Button
+                                      variant="ghost"
+                                      onClick={prevMonth}
                                       disabled={currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear()}
-                                  className="hover:bg-blue-50 text-primary-petroleum"
-                                  aria-label="Mês anterior"
-                                >
-                                  <ChevronLeft className="h-5 w-5" />
-                                </Button>
-                                    <span className="text-lg sm:text-xl font-semibold capitalize text-primary-petroleum">
-                                  {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
-                                </span>
-                                    <Button variant="ghost" onClick={nextMonth} className="hover:bg-blue-50 text-primary-petroleum" aria-label="Próximo mês">
-                                  <ChevronRight className="h-5 w-5" />
-                                </Button>
-                              </div>
-                              
-                                  <div className="grid grid-cols-7 gap-2">
-                                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-                                      <div key={day} className="text-center text-xs sm:text-sm font-semibold text-text-muted py-2">{day}</div>
-                                ))}
-                              </div>
-                              <div className="grid grid-cols-7 gap-2">
-                                {getCalendarDays(currentMonth).map((item, i) => (
-                                  <Button
-                                    key={i}
-                                    variant="outline"
-                                    disabled={!item.date || !item.available}
-                                    onClick={() => item.date && setSelectedDate(item.date)}
-                                    className={cn(
-                                          'h-10 sm:h-12 rounded-lg transition-all duration-200 border-2',
-                                      !item.date && 'invisible',
-                                          !item.available && 'bg-white text-black border-gray-200 cursor-not-allowed',
-                                          item.available && 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:border-green-400',
-                                          selectedDate === item.date ? 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg transform scale-105' : ''
-                                    )}
-                                    aria-label={item.date ? `Selecionar ${item.date}` : ''}
+                                      className="hover:bg-blue-50 text-primary-petroleum disabled:opacity-50 disabled:cursor-not-allowed"
+                                      aria-label="Mês anterior"
+                                    >
+                                      <ChevronLeft className="h-5 w-5" />
+                                    </Button>
+                                    <div className="text-center">
+                                      <span className="text-lg sm:text-xl font-semibold capitalize text-primary-petroleum">
+                                        {currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                                      </span>
+                                      <p className="text-xs text-gray-500 mt-1">Arraste para navegar pelos dias</p>
+                                    </div>
+                                    <Button 
+                                      variant="ghost" 
+                                      onClick={nextMonth} 
+                                      disabled={(() => {
+                                        const now = new Date();
+                                        const maxDate = new Date(now);
+                                        maxDate.setDate(maxDate.getDate() + 30);
+                                        const maxMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+                                        const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+                                        return nextMonth > maxMonth;
+                                      })()}
+                                      className="hover:bg-blue-50 text-primary-petroleum disabled:opacity-50 disabled:cursor-not-allowed" 
+                                      aria-label="Próximo mês"
+                                    >
+                                      <ChevronRight className="h-5 w-5" />
+                                    </Button>
+                                  </div>
+                                  
+                                  {/* Carrossel de cards de datas */}
+                                  <div 
+                                    ref={carouselRef}
+                                    className={`carousel-container flex gap-3 overflow-x-auto pb-2 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                    style={{ 
+                                      scrollbarWidth: 'none', 
+                                      msOverflowStyle: 'none',
+                                      scrollBehavior: 'smooth',
+                                      willChange: 'scroll-position',
+                                      transform: 'translateZ(0)', // Força aceleração de hardware
+                                      backfaceVisibility: 'hidden' // Otimização de performance
+                                    }}
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseLeave}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
                                   >
-                                    {item.date ? String(Number(item.date.split('-')[2])).padStart(2, '0') : ''}
-                                  </Button>
-                                ))}
-                              </div>
+                                    {getCalendarDays(currentMonth)
+                                      .filter(item => item.date) // Remove dias vazios
+                                      .map((item, i) => {
+                                        const date = new Date(item.date!);
+                                        const dayName = date.toLocaleDateString('pt-BR', { weekday: 'short' });
+                                        const dayNumber = date.getDate();
+                                        
+                                        return (
+                                          <div
+                                            key={i}
+                                            className={cn(
+                                              'carousel-item flex-shrink-0 w-16 h-20 rounded-lg border-2 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center relative',
+                                              !item.available && 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed',
+                                              item.available && 'bg-white text-gray-800 border-gray-200 hover:border-primary-petroleum hover:shadow-md',
+                                              selectedDate === item.date && 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg transform scale-105'
+                                            )}
+                                            style={{
+                                              willChange: 'transform',
+                                              transform: 'translateZ(0)',
+                                              backfaceVisibility: 'hidden'
+                                            }}
+                                            onClick={() => item.available && item.date && setSelectedDate(item.date)}
+                                            aria-label={item.date ? `Selecionar ${item.date}` : ''}
+                                          >
+                                            {/* Dia da semana */}
+                                            <span className="text-xs font-medium uppercase">
+                                              {dayName}
+                                            </span>
+                                            
+                                            {/* Número do dia */}
+                                            <span className="text-lg font-bold mt-1">
+                                              {dayNumber}
+                                            </span>
+                                            
+                                            {/* Linha verde para dias disponíveis */}
+                                            {item.available && (
+                                              <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-green-500 rounded-full"></div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
                                 </>
                         )}
 
-                              {/* Horários dentro da mesma etapa - só aparece quando uma data for selecionada */}
+                              {/* Carrossel de horários - só aparece quando uma data for selecionada */}
                         {selectedDate && (
                                 <div className="pt-3 sm:pt-4">
                                   <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -879,35 +1093,62 @@ export default function Booking() {
                                     </div>
                                     {isLoadingAvailability && <span className="text-sm text-text-muted">Carregando...</span>}
                                   </div>
-                                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-                                {isLoadingAvailability ? (
-                                  <div className="col-span-full text-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-                                    <p className="text-text-muted">Carregando horários disponíveis...</p>
-                                  </div>
-                                ) : availableTimes.length > 0 ? (
-                                  availableTimes.map((time) => (
-                                    <Button
-                                      key={time}
-                                      variant="outline"
-                                      onClick={() => setSelectedTime(time)}
-                                      className={cn(
-                                            'p-2 sm:p-3 md:p-4 rounded-lg transition-all duration-200 border-2 text-sm sm:text-base md:text-lg font-semibold min-h-[44px]',
-                                            selectedTime === time ? 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg' : 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:border-green-400'
-                                      )}
-                                      aria-label={`Selecionar horário ${time}`}
+                                  
+                                  {isLoadingAvailability ? (
+                                    <div className="text-center py-8">
+                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                                      <p className="text-text-muted">Carregando horários disponíveis...</p>
+                                    </div>
+                                  ) : availableTimes.length > 0 ? (
+                                    <div 
+                                      ref={timesCarouselRef}
+                                      className={`carousel-container flex gap-3 overflow-x-auto pb-2 select-none ${isDraggingTimes ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                      style={{ 
+                                        scrollbarWidth: 'none', 
+                                        msOverflowStyle: 'none',
+                                        scrollBehavior: 'smooth',
+                                        willChange: 'scroll-position',
+                                        transform: 'translateZ(0)',
+                                        backfaceVisibility: 'hidden'
+                                      }}
+                                      onMouseDown={handleTimesMouseDown}
+                                      onMouseMove={handleTimesMouseMove}
+                                      onMouseUp={handleTimesMouseUp}
+                                      onMouseLeave={handleTimesMouseLeave}
+                                      onTouchStart={handleTimesTouchStart}
+                                      onTouchMove={handleTimesTouchMove}
+                                      onTouchEnd={handleTimesTouchEnd}
                                     >
-                                      {time}
-                                    </Button>
-                                  ))
-                                ) : (
-                                      <div className="col-span-full text-center py-6 text-text-muted">
-                                        <p className="text-sm sm:text-base">
-                                          Nenhum horário disponível para esta data. Tente selecionar outra data.
-                                    </p>
-                                  </div>
-                                )}
-                                  </div>
+                                      {availableTimes.map((time) => (
+                                        <div
+                                          key={time}
+                                          className={cn(
+                                            'carousel-item flex-shrink-0 w-16 h-12 rounded-lg border-2 cursor-pointer transition-all duration-200 flex items-center justify-center relative',
+                                            selectedTime === time 
+                                              ? 'bg-primary-petroleum text-white border-primary-petroleum shadow-lg transform scale-105' 
+                                              : 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:border-green-400 hover:shadow-md'
+                                          )}
+                                          style={{
+                                            willChange: 'transform',
+                                            transform: 'translateZ(0)',
+                                            backfaceVisibility: 'hidden'
+                                          }}
+                                          onClick={() => setSelectedTime(time)}
+                                          aria-label={`Selecionar horário ${time}`}
+                                        >
+                                          <span className="text-sm font-bold">
+                                            {time}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-6 text-text-muted">
+                                      <p className="text-sm sm:text-base">
+                                        Nenhum horário disponível para esta data. Tente selecionar outra data.
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                               )}
 
@@ -931,13 +1172,6 @@ export default function Booking() {
                       {currentStep === 4 && (
                         <div key="step-4">
                         <Card className="bg-card-bg border-0 shadow-lg">
-                            <CardHeader className="bg-gradient-to-r from-primary-petroleum/10 to-blue-50 border-b border-primary-petroleum/20">
-                            <CardTitle className="flex items-center text-xl font-semibold text-text-main">
-                              <Phone className="h-5 w-5 text-orange-600 mr-2" />
-                                Identificação do Cliente
-                            </CardTitle>
-                              <p className="text-sm text-text-muted mt-2">Informe seus dados para finalizar o agendamento</p>
-                          </CardHeader>
                             <CardContent className="p-4 sm:p-6">
                               <div className="space-y-4 sm:space-y-6">
                               <div>
@@ -1016,8 +1250,7 @@ export default function Booking() {
                             <div className="space-y-1 sm:space-y-2">
                               {selectedServicesData.map((service) => (
                                 <div key={service.id} className="flex justify-between items-center text-sm">
-                                  <span className="text-gray-700">{service.type}</span>
-                                  <span className="font-semibold text-secondary-gold">R$ {service.price}</span>
+                                  <span className="text-gray-700">{service.type} - R$ {service.price}</span>
                                 </div>
                               ))}
                       </div>

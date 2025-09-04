@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Scissors } from 'lucide-react';
+import { Plus, Edit, Trash2, Scissors, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,12 +7,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
+
+interface Barber {
+  id: string;
+  name: string;
+}
 
 interface Service {
   id: string;
   type: string;
   price: number;
   duration: number;
+  barbers?: Barber[];
 }
 
 function ServiceForm({
@@ -20,12 +28,18 @@ function ServiceForm({
   isLoading,
   editingService,
 }: {
-  onSubmit: (data: { type: string; price: number; duration: number }) => void;
+  onSubmit: (data: { type: string; price: number; duration: number; barberIds: string[] }) => void;
   isLoading: boolean;
   editingService?: Service | null;
 }) {
   const [form, setForm] = useState({ type: '', price: '', duration: '' });
+  const [selectedBarbers, setSelectedBarbers] = useState<string[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchBarbers();
+  }, []);
 
   useEffect(() => {
     if (editingService) {
@@ -34,10 +48,31 @@ function ServiceForm({
         price: editingService.price.toString(),
         duration: editingService.duration.toString(),
       });
+      // Carregar barbeiros associados ao serviço
+      if (editingService.barbers) {
+        setSelectedBarbers(editingService.barbers.map(b => b.id));
+      } else {
+        setSelectedBarbers([]);
+      }
     } else {
       setForm({ type: '', price: '', duration: '' });
+      setSelectedBarbers([]);
     }
   }, [editingService]);
+
+  const fetchBarbers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('barbers')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      setBarbers(data || []);
+    } catch (error) {
+      console.error('Error fetching barbers:', error);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +86,16 @@ function ServiceForm({
       setError('Preço e duração devem ser números');
       return;
     }
+    if (selectedBarbers.length === 0) {
+      setError('Selecione pelo menos um barbeiro');
+      return;
+    }
 
     onSubmit({
       type: form.type,
       price: Number(form.price),
       duration: Number(form.duration),
+      barberIds: selectedBarbers,
     });
   };
 
@@ -93,6 +133,39 @@ function ServiceForm({
           />
         </div>
       </div>
+      
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-3">Barbeiros que realizam este serviço</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto border rounded-lg p-3">
+          {barbers.map((barber) => (
+            <div key={barber.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={`barber-${barber.id}`}
+                checked={selectedBarbers.includes(barber.id)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setSelectedBarbers(prev => [...prev, barber.id]);
+                  } else {
+                    setSelectedBarbers(prev => prev.filter(id => id !== barber.id));
+                  }
+                }}
+              />
+              <label
+                htmlFor={`barber-${barber.id}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                {barber.name}
+              </label>
+            </div>
+          ))}
+        </div>
+        {selectedBarbers.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-2">
+            {selectedBarbers.length} barbeiro{selectedBarbers.length > 1 ? 's' : ''} selecionado{selectedBarbers.length > 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+      
       {error && <div className="text-destructive text-sm mb-4">{error}</div>}
       <div className="flex justify-end">
         <Button type="submit" disabled={isLoading}>
@@ -127,18 +200,32 @@ export default function Services() {
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('services').select('*').order('type');
+      const { data, error } = await supabase
+        .from('services')
+        .select(`
+          *,
+          barber_services(
+            barber_id,
+            barbers(
+              id,
+              name
+            )
+          )
+        `)
+        .order('type');
+      
       if (error) throw error;
       
       if (data) {
-                 setServices(
-           data.map((item: any) => ({
-             id: item.id,
-             type: item.type,
-             price: parseFloat(item.price.toString()),
-             duration: item.duration || 30,
-           }))
-         );
+        setServices(
+          data.map((item: any) => ({
+            id: item.id,
+            type: item.type,
+            price: parseFloat(item.price.toString()),
+            duration: item.duration || 30,
+            barbers: item.barber_services?.map((bs: any) => bs.barbers).filter(Boolean) || [],
+          }))
+        );
       }
     } catch (error: any) {
       console.error('Error fetching services:', error);
@@ -152,10 +239,13 @@ export default function Services() {
     }
   };
 
-  const handleSubmit = async (data: { type: string; price: number; duration: number }) => {
+  const handleSubmit = async (data: { type: string; price: number; duration: number; barberIds: string[] }) => {
     setIsLoading(true);
     try {
+      let serviceId: string;
+
       if (editingService) {
+        // Atualizar serviço existente
         const { error: updateError } = await supabase
           .from('services')
           .update({
@@ -165,24 +255,56 @@ export default function Services() {
           })
           .eq('id', editingService.id);
         if (updateError) throw updateError;
+        
+        serviceId = editingService.id;
+        
+        // Remover associações existentes
+        const { error: deleteError } = await supabase
+          .from('barber_services')
+          .delete()
+          .eq('service_id', serviceId);
+        if (deleteError) throw deleteError;
+        
         toast({
           title: 'Serviço atualizado!',
           description: 'As informações foram salvas com sucesso.',
         });
         setEditingService(null);
       } else {
-        const { error: insertError } = await supabase.from('services').insert({
-          type: data.type,
-          price: data.price,
-          duration: data.duration,
-        });
+        // Criar novo serviço
+        const { data: newService, error: insertError } = await supabase
+          .from('services')
+          .insert({
+            type: data.type,
+            price: data.price,
+            duration: data.duration,
+          })
+          .select()
+          .single();
         if (insertError) throw insertError;
+        
+        serviceId = newService.id;
+        
         toast({
           title: 'Serviço adicionado!',
           description: 'O serviço foi cadastrado com sucesso.',
         });
         setIsAddOpen(false);
       }
+
+      // Adicionar novas associações barber_services
+      if (data.barberIds.length > 0) {
+        const barberServicesData = data.barberIds.map(barberId => ({
+          service_id: serviceId,
+          barber_id: barberId,
+        }));
+
+        const { error: insertBarberServicesError } = await supabase
+          .from('barber_services')
+          .insert(barberServicesData);
+        if (insertBarberServicesError) throw insertBarberServicesError;
+      }
+
       fetchServices();
     } catch (error: any) {
       console.error('Error handling service:', error);
@@ -281,6 +403,26 @@ export default function Services() {
                                  <div className="space-y-3">
                    <div className="text-2xl font-bold text-foreground">R$ {service.price.toFixed(2)}</div>
                    <p className="text-sm text-muted-foreground">{service.duration} minutos</p>
+                   
+                   {service.barbers && service.barbers.length > 0 && (
+                     <div className="space-y-2">
+                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                         <Users className="h-3 w-3" />
+                         <span>Barbeiros:</span>
+                       </div>
+                       <div className="flex flex-wrap gap-1">
+                         {service.barbers.map((barber) => (
+                           <span
+                             key={barber.id}
+                             className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary/10 text-primary border border-primary/20"
+                           >
+                             {barber.name}
+                           </span>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+                   
                    <div className="flex gap-2 pt-2">
                     <Button
                       variant="outline"
