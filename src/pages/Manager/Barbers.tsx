@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, User, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,6 +60,17 @@ export default function Barbers() {
   const [editDefaultEnd, setEditDefaultEnd] = useState('18:00');
   const [editDefaultDays, setEditDefaultDays] = useState<string[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
   const [editName, setEditName] = useState('');
+
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Lista com 10 itens por página
+  // Ordenar barbeiros por ordem alfabética
+  const sortedBarbers = [...barbers].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  
+  const totalPages = Math.ceil(sortedBarbers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentBarbers = sortedBarbers.slice(startIndex, endIndex);
 
   // Funções de validação
   const validateSchedule = (schedule: Schedule): boolean => {
@@ -327,11 +338,13 @@ export default function Barbers() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="h-12 w-12 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
+            <span className="text-2xl">🔒</span>
+          </div>
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Acesso Restrito
           </h3>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Apenas administradores podem gerenciar barbeiros
           </p>
         </div>
@@ -348,17 +361,17 @@ export default function Barbers() {
         <link rel="canonical" href="https://www.seusite.com.br/barbeiros" />
       </Helmet>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Barbeiros</h1>
-            <p className="text-muted-foreground">Gerencie a equipe de profissionais</p>
           </div>
 
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
-                Novo Barbeiro
+                <span className="hidden sm:inline">Novo Barbeiro</span>
+                <span className="sm:hidden">Adicionar</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl p-0 overflow-hidden sm:rounded-lg">
@@ -498,57 +511,129 @@ export default function Barbers() {
           </div>
         ) : barbers.length === 0 ? (
           <div className="text-center py-12">
-            <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <div className="h-12 w-12 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-2xl">👨‍💼</span>
+            </div>
+            <h3 className="text-lg font-medium text-foreground mb-2">
               Nenhum barbeiro cadastrado
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               Comece adicionando os profissionais da sua equipe
             </p>
-            <Button onClick={() => setIsAddOpen(true)} className="bg-gray-900 hover:bg-gray-800 text-white">
+            <Button onClick={() => setIsAddOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Adicionar Primeiro Barbeiro
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {barbers.map(barber => (
-              <Card key={barber.id} className="border-gray-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-gray-600" />
-                    {barber.name}
-                  </CardTitle>
-                  <CardDescription>
-                    Barbeiro profissional
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(barber)}
-                        className="flex-1 border-gray-300 hover:bg-gray-50"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(barber.id, barber.name)}
-                        className="flex-1 bg-red-600 hover:bg-red-700"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Excluir
-                      </Button>
+          <div className="space-y-3">
+            {currentBarbers.map(barber => (
+              <Card key={barber.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  {/* Layout Desktop */}
+                  <div className="hidden md:flex items-center justify-between w-full">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center space-x-6 flex-1">
+                        <h3 className="text-lg font-semibold text-foreground min-w-0 flex-1">
+                          {barber.name}
+                        </h3>
+                        
+                        <div className="flex items-center space-x-1 text-sm">
+                          <span className="text-muted-foreground">Profissional:</span>
+                          <span className="font-medium text-foreground">
+                            Barbeiro
+                          </span>
+                        </div>
+                      </div>
                     </div>
+
+                    {user?.role === 'admin' && (
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(barber)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(barber.id, barber.name)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Excluir
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Layout Mobile */}
+                  <div className="md:hidden">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between w-full">
+                        <h3 className="text-base font-semibold text-foreground flex-1">
+                          {barber.name}
+                        </h3>
+                        
+                        <div className="flex items-center space-x-1 text-sm">
+                          <span className="text-muted-foreground">Barbeiro</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {user?.role === 'admin' && (
+                      <div className="flex space-x-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(barber)}
+                          className="flex-1"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(barber.id, barber.name)}
+                          className="flex-1"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Excluir
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              Anterior
+            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
+              <span className="text-sm text-muted-foreground">({barbers.length} barbeiros)</span>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              Próxima
+            </Button>
           </div>
         )}
 

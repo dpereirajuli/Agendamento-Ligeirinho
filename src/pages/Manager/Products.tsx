@@ -1,12 +1,13 @@
 
 import { useState } from 'react';
-import { Plus, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import ProductForm from '@/components/Manager/forms/ProductForm';
+import { Badge } from '@/components/ui/badge';
 
 export default function Products() {
   const { products, addProduct, updateProduct, deleteProduct, user } = useApp();
@@ -17,11 +18,14 @@ export default function Products() {
   
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9; // 3x3 grid
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const itemsPerPage = 10; // Lista com 10 itens por página
+  // Ordenar produtos por ordem alfabética
+  const sortedProducts = [...products].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentProducts = products.slice(startIndex, endIndex);
+  const currentProducts = sortedProducts.slice(startIndex, endIndex);
 
   const handleSubmit = (data: { name: string; price: number; stock: number; minStock: number }) => {
     setIsLoading(true);
@@ -69,21 +73,21 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
-          <p className="text-muted-foreground">Gerencie seu estoque</p>
         </div>
 
         {user?.role === 'admin' && (
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
-                Novo Produto
+                <span className="hidden sm:inline">Novo Produto</span>
+                <span className="sm:hidden">Adicionar</span>
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="mx-4 sm:mx-0">
               <DialogHeader>
                 <DialogTitle>Adicionar Produto</DialogTitle>
                 <DialogDescription>
@@ -96,40 +100,101 @@ export default function Products() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="space-y-3">
         {currentProducts.map(product => (
-          <Card key={product.id} className="relative">
-            {product.stock <= product.minStock && (
-              <div className="absolute top-3 right-3">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-              </div>
-            )}
-            
-            <CardHeader>
-              <CardTitle className="text-lg">{product.name}</CardTitle>
-              <CardDescription>
-                R$ {product.price.toFixed(2)}
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Estoque:</span>
-                  <span className={`font-medium ${
-                    product.stock <= product.minStock ? 'text-destructive' : 'text-success'
-                  }`}>
-                    {product.stock} unidades
-                  </span>
-                </div>
-                
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Mínimo:</span>
-                  <span>{product.minStock} unidades</span>
+          <Card key={product.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              {/* Layout Desktop */}
+              <div className="hidden md:flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center space-x-6 flex-1">
+                    <h3 className="text-lg font-semibold text-foreground min-w-0 flex-1">
+                      {product.name}
+                    </h3>
+                    
+                    <div className="flex items-center space-x-1 text-sm">
+                      <span className="text-muted-foreground">Preço:</span>
+                      <span className="font-medium text-foreground">
+                        R$ {product.price.toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-1 text-sm">
+                      <span className="text-muted-foreground">Qtde:</span>
+                      <span className={`font-medium ${
+                        product.stock <= product.minStock ? 'text-destructive' : 'text-green-600'
+                      }`}>
+                        {product.stock} unidades
+                      </span>
+                    </div>
+                    
+                    {product.stock <= product.minStock && (
+                      <Badge variant="destructive" className="text-xs">
+                        Baixo Estoque
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 {user?.role === 'admin' && (
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex items-center space-x-2 ml-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(product)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(product.id, product.name)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Excluir
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Layout Mobile */}
+              <div className="md:hidden">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between w-full">
+                    <h3 className="text-base font-semibold text-foreground flex-1">
+                      {product.name}
+                    </h3>
+                    
+                    <div className="flex items-center space-x-1 text-sm">
+                      <span className="text-muted-foreground">R$</span>
+                      <span className="font-bold text-foreground">
+                        {product.price.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1 text-sm">
+                      <span className="text-muted-foreground">Qtde.:</span>
+                      <span className={`font-medium ${
+                        product.stock <= product.minStock ? 'text-destructive' : 'text-green-600'
+                      }`}>
+                        {product.stock} unidades
+                      </span>
+                    </div>
+                    
+                    {product.stock <= product.minStock && (
+                      <Badge variant="destructive" className="text-xs">
+                        Baixo Estoque
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {user?.role === 'admin' && (
+                  <div className="flex space-x-2 pt-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -160,7 +225,9 @@ export default function Products() {
       {/* Estado vazio */}
       {products.length === 0 && (
         <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <div className="h-12 w-12 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
+            <span className="text-2xl">📦</span>
+          </div>
           <h3 className="text-lg font-medium text-foreground mb-2">
             Nenhum produto cadastrado
           </h3>
@@ -178,17 +245,17 @@ export default function Products() {
 
       {/* Controles de Paginação */}
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 mt-8">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
           <Button
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
           >
             Anterior
           </Button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2 text-center">
             <span className="text-sm text-muted-foreground">
               Página {currentPage} de {totalPages}
             </span>
@@ -201,7 +268,7 @@ export default function Products() {
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
           >
             Próxima
           </Button>
@@ -209,7 +276,7 @@ export default function Products() {
       )}
 
       <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
-        <DialogContent>
+        <DialogContent className="mx-4 sm:mx-0">
           <DialogHeader>
             <DialogTitle>Editar Produto</DialogTitle>
             <DialogDescription>

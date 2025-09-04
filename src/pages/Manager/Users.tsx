@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, User, Shield } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,17 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Lista com 10 itens por página
+  // Ordenar usuários por ordem alfabética
+  const sortedUsers = [...users].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  
+  const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentUsers = sortedUsers.slice(startIndex, endIndex);
 
   useEffect(() => {
     if (isAdmin) {
@@ -177,7 +188,9 @@ export default function Users() {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <div className="h-12 w-12 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
+            <span className="text-2xl">🔒</span>
+          </div>
           <h3 className="text-lg font-medium text-foreground mb-2">
             Acesso Restrito
           </h3>
@@ -243,20 +256,20 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
-          <p className="text-muted-foreground">Gerencie usuários do sistema</p>
         </div>
 
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
-              Novo Usuário
+              <span className="hidden sm:inline">Novo Usuário</span>
+              <span className="sm:hidden">Adicionar</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="mx-4 sm:mx-0">
             <DialogHeader>
               <DialogTitle>Adicionar Usuário</DialogTitle>
               <DialogDescription>
@@ -268,71 +281,153 @@ export default function Users() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {users.map(user => (
-          <Card key={user.id} className="border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {user.role === 'admin' ? (
-                  <Shield className="h-5 w-5 text-destructive" />
-                ) : (
-                  <User className="h-5 w-5 text-muted-foreground" />
-                )}
-                {user.name}
-                <span className={`text-xs px-2 py-1 rounded ${user.approval_status === 'approved' ? 'bg-success/20 text-success' : user.approval_status === 'rejected' ? 'bg-destructive/20 text-destructive' : 'bg-primary/20 text-primary'}`}>
-                  {user.approval_status === 'approved' ? 'Aprovado' : user.approval_status === 'rejected' ? 'Rejeitado' : 'Pendente'}
-                </span>
-              </CardTitle>
-              <CardDescription>
-                {user.email}
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Função:</span>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    user.role === 'admin' 
-                      ? 'bg-destructive/20 text-destructive' 
-                      : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {user.role === 'admin' ? 'Administrador' : 'Usuário'}
-                  </span>
-                </div>
-                
-                <div className="flex gap-2 pt-2 flex-wrap">
-                  {user.approval_status === 'pending' && (
-                    <div className="flex gap-2 w-full">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleApprove(user.id)}
-                        className="flex-1 border-success hover:bg-success/10 text-success"
-                      >
-                        Aprovar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReject(user.id)}
-                        className="flex-1 border-destructive hover:bg-destructive/10 text-destructive"
-                      >
-                        Rejeitar
-                      </Button>
+      <div className="space-y-3">
+        {currentUsers.map(user => (
+          <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              {/* Layout Desktop */}
+              <div className="hidden md:flex items-center justify-between w-full">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center space-x-6 flex-1">
+                    <h3 className="text-lg font-semibold text-foreground min-w-0 flex-1">
+                      {user.name}
+                    </h3>
+                    
+                    <div className="flex items-center space-x-1 text-sm">
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium text-foreground">
+                        {user.email}
+                      </span>
                     </div>
-                  )}
-                  <div className="flex gap-2 w-full">
+                    
+                    <div className="flex items-center space-x-1 text-sm">
+                      <span className="text-muted-foreground">Função:</span>
+                      <span className={`font-medium ${
+                        user.role === 'admin' ? 'text-destructive' : 'text-muted-foreground'
+                      }`}>
+                        {user.role === 'admin' ? 'Admin' : 'Usuário'}
+                      </span>
+                    </div>
+                    
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      user.approval_status === 'approved' ? 'bg-green-100 text-green-800' : 
+                      user.approval_status === 'rejected' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {user.approval_status === 'approved' ? 'Aprovado' : 
+                       user.approval_status === 'rejected' ? 'Rejeitado' : 'Pendente'}
+                    </span>
+                  </div>
+                </div>
+
+                {isAdmin && (
+                  <div className="flex items-center space-x-2 ml-4">
+                    {user.approval_status === 'pending' && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleApprove(user.id)}
+                          className="border-green-500 hover:bg-green-50 text-green-700"
+                        >
+                          Aprovar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReject(user.id)}
+                          className="border-red-500 hover:bg-red-50 text-red-700"
+                        >
+                          Rejeitar
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(user)}
-                      className="flex-1 border-border hover:bg-muted"
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
                     </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(user.id, user.name)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Excluir
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Layout Mobile */}
+              <div className="md:hidden">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between w-full">
+                    <h3 className="text-base font-semibold text-foreground flex-1">
+                      {user.name}
+                    </h3>
                     
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      user.approval_status === 'approved' ? 'bg-green-100 text-green-800' : 
+                      user.approval_status === 'rejected' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {user.approval_status === 'approved' ? 'Aprovado' : 
+                       user.approval_status === 'rejected' ? 'Rejeitado' : 'Pendente'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-1 text-sm">
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="font-medium text-foreground">
+                      {user.email}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-1 text-sm">
+                    <span className="text-muted-foreground">Função:</span>
+                    <span className={`font-medium ${
+                      user.role === 'admin' ? 'text-destructive' : 'text-muted-foreground'
+                    }`}>
+                      {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                    </span>
+                  </div>
+                </div>
+
+                {isAdmin && (
+                  <div className="flex space-x-2 pt-2">
+                    {user.approval_status === 'pending' && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleApprove(user.id)}
+                          className="flex-1 border-green-500 hover:bg-green-50 text-green-700"
+                        >
+                          Aprovar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReject(user.id)}
+                          className="flex-1 border-red-500 hover:bg-red-50 text-red-700"
+                        >
+                          Rejeitar
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(user)}
+                      className="flex-1"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
                     <Button
                       variant="destructive"
                       size="sm"
@@ -343,15 +438,40 @@ export default function Users() {
                       Excluir
                     </Button>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="flex items-center gap-2 w-full sm:w-auto"
+          >
+            Anterior
+          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
+            <span className="text-sm text-muted-foreground">({users.length} usuários)</span>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="flex items-center gap-2 w-full sm:w-auto"
+          >
+            Próxima
+          </Button>
+        </div>
+      )}
+
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-        <DialogContent>
+        <DialogContent className="mx-4 sm:mx-0">
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
             <DialogDescription>
@@ -368,7 +488,9 @@ export default function Users() {
 
       {users.length === 0 && (
         <div className="text-center py-12">
-          <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <div className="h-12 w-12 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
+            <span className="text-2xl">👥</span>
+          </div>
           <h3 className="text-lg font-medium text-foreground mb-2">
             Nenhum usuário cadastrado
           </h3>

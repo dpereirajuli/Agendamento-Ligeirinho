@@ -1,14 +1,13 @@
 
 import { useState } from 'react';
-import { ShoppingCart, Plus, Scissors, Trash2, Minus } from 'lucide-react';
+import { ShoppingCart, Plus, Trash2, Minus, Package, Scissors, User, ChevronDown } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { PhoneInput } from '@/components/Manager/PhoneInput';
@@ -25,16 +24,14 @@ type CartItem = {
 };
 
 export default function Sales() {
-  const { products, services, barbers, addTransaction, updateTransaction, transactions, user, updateProduct } = useApp();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(6);
-  const [currentServicePage, setCurrentServicePage] = useState(1);
-  const [servicesPerPage] = useState(6);
+  const { products, services, barbers, addTransaction, transactions, user, updateProduct } = useApp();
   const { toast } = useToast();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [currentTab, setCurrentTab] = useState('products');
   const [selectedBarber, setSelectedBarber] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isProductsExpanded, setIsProductsExpanded] = useState(false);
+  const [isServicesExpanded, setIsServicesExpanded] = useState(false);
   
   const [checkoutData, setCheckoutData] = useState({
     paymentMethod: 'dinheiro' as 'dinheiro' | 'cartao' | 'pix' | 'fiado',
@@ -47,15 +44,6 @@ export default function Sales() {
       toast({
         title: "Produto sem estoque",
         description: "Este produto não está disponível.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (type === 'service' && !barberId) {
-      toast({
-        title: "Selecione um barbeiro",
-        description: "É necessário selecionar um barbeiro para o serviço.",
         variant: "destructive",
       });
       return;
@@ -137,6 +125,19 @@ export default function Sales() {
     ));
   };
 
+  const updateBarberForItem = (id: string, type: 'product' | 'service', barberId: string) => {
+    if (type !== 'service') return;
+    
+    const barber = barbers.find(b => b.id === barberId);
+    if (!barber) return;
+
+    setCart(prev => prev.map(item => 
+      item.id === id && item.type === type
+        ? { ...item, barberId, barberName: barber.name }
+        : item
+    ));
+  };
+
   const getCartTotal = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
@@ -161,12 +162,7 @@ export default function Sales() {
           t.clientPhone && t.clientPhone.replace(/\D/g, '') === phoneNumbers
         );
         
-        // Atualizar o nome em todas as transações deste cliente
-        clientTransactions.forEach(transaction => {
-          if (transaction.clientName !== newName) {
-            updateTransaction(transaction.id, { ...transaction, clientName: newName });
-          }
-        });
+        // Nome do cliente atualizado para futuras transações
       }
     }
   };
@@ -237,37 +233,70 @@ export default function Sales() {
 
 
 
+  // Filtrar e ordenar itens por busca
+  const filteredProducts = products
+    .filter(p => p.stock > 0 && p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  
+  const filteredServices = services
+    .filter(s => s.type.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.type.localeCompare(b.type, 'pt-BR'));
+
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+      {/* Coluna Principal - Produtos e Serviços */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Header com busca e seleção de barbeiro */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Buscar produtos e serviços..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
 
-      <Tabs value={currentTab} onValueChange={setCurrentTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="products">Produtos</TabsTrigger>
-          <TabsTrigger value="services">Serviços</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="products" className="space-y-4">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products
-                .filter(p => p.stock > 0)
-                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                .map(product => (
+        {/* Produtos */}
+        <div className="space-y-4">
+          <div 
+            className="flex items-center gap-2 cursor-pointer bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
+            onClick={() => setIsProductsExpanded(!isProductsExpanded)}
+          >
+            <Package className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold">Produtos</h2>
+            <Badge variant="secondary">{filteredProducts.length}</Badge>
+            <ChevronDown 
+              className={`h-4 w-4 transition-transform duration-200 ml-auto ${
+                isProductsExpanded ? 'rotate-180' : ''
+              }`} 
+            />
+          </div>
+          
+          {isProductsExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
+            {filteredProducts.map(product => (
               <Card key={product.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
-                  <CardDescription>
-                    Estoque: {product.stock} unidades
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-foreground">
-                      R$ {product.price.toFixed(2)}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">
+                        {product.name}
+                      </h3>
+                      <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
+                        <span>Estoque: {product.stock}</span>
+                        <span className="font-medium text-foreground">
+                          R$ {product.price.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                     <Button 
                       onClick={() => addToCart(product, 'product')}
                       size="sm"
+                      className="ml-2"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -276,76 +305,45 @@ export default function Sales() {
               </Card>
             ))}
             </div>
-            <div className="flex justify-center gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </Button>
-              <span className="py-2 px-4 bg-muted rounded">
-                Página {currentPage} de {Math.ceil(products.filter(p => p.stock > 0).length / itemsPerPage)}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(products.filter(p => p.stock > 0).length / itemsPerPage), prev + 1))}
-                disabled={currentPage === Math.ceil(products.filter(p => p.stock > 0).length / itemsPerPage)}
-              >
-                Próxima
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="services" className="space-y-4">
-          {barbers.length > 0 && (
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle className="text-card-foreground">Selecionar Barbeiro</CardTitle>
-                <CardDescription className="text-muted-foreground">Escolha o barbeiro que realizará o serviço</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Select value={selectedBarber} onValueChange={setSelectedBarber}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um barbeiro" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {barbers.map(barber => (
-                      <SelectItem key={barber.id} value={barber.id}>
-                        {barber.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
           )}
+        </div>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {services
-                .slice((currentServicePage - 1) * servicesPerPage, currentServicePage * servicesPerPage)
-                .map(service => (
-              <Card key={service.id} className="hover:shadow-md transition-shadow border-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Scissors className="h-5 w-5 text-muted-foreground" />
-                    {service.type}
-                  </CardTitle>
-                  <CardDescription>
-                    Serviço profissional
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+        {/* Serviços */}
+        <div className="space-y-4">
+          <div 
+            className="flex items-center gap-2 cursor-pointer bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
+            onClick={() => setIsServicesExpanded(!isServicesExpanded)}
+          >
+            <Scissors className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold">Serviços</h2>
+            <Badge variant="secondary">{filteredServices.length}</Badge>
+            <ChevronDown 
+              className={`h-4 w-4 transition-transform duration-200 ml-auto ${
+                isServicesExpanded ? 'rotate-180' : ''
+              }`} 
+            />
+          </div>
+          
+          {isServicesExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
+            {filteredServices.map(service => (
+              <Card key={service.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-foreground">
-                      R$ {service.price.toFixed(2)}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">
+                        {service.type}
+                      </h3>
+                      <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          R$ {service.price.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                     <Button
-                      onClick={() => addToCart(service, 'service', selectedBarber)}
+                      onClick={() => addToCart(service, 'service')}
                       size="sm"
-                      disabled={!selectedBarber}
+                      className="ml-2"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -354,128 +352,135 @@ export default function Sales() {
               </Card>
             ))}
             </div>
-            <div className="flex justify-center gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentServicePage(prev => Math.max(1, prev - 1))}
-                disabled={currentServicePage === 1}
-              >
-                Anterior
-              </Button>
-              <span className="py-2 px-4 bg-muted rounded">
-                Página {currentServicePage} de {Math.ceil(services.length / servicesPerPage)}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentServicePage(prev => Math.min(Math.ceil(services.length / servicesPerPage), prev + 1))}
-                disabled={currentServicePage === Math.ceil(services.length / servicesPerPage)}
-              >
-                Próxima
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          )}
+        </div>
+      </div>
 
-      {/* Carrinho */}
-      {cart.length > 0 && (
-        <Card className="border-border">
+      {/* Carrinho Lateral */}
+      <div className="lg:col-span-1">
+        <Card className="sticky top-4">
           <CardHeader>
-            <CardTitle>Carrinho de Compras</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Carrinho
+              {cart.length > 0 && (
+                <Badge variant="secondary">{cart.length}</Badge>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {cart.map((item, index) => (
-                <div key={`${item.id}-${item.type}-${item.barberId}-${index}`} className="p-3 border border-border rounded-lg">
-                  {/* Informações do item */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-0">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-base">{item.name}</h4>
-                      {item.barberName && (
-                        <p className="text-sm text-muted-foreground">Barbeiro: {item.barberName}</p>
-                      )}
-                      <p className="text-sm text-muted-foreground">R$ {item.price.toFixed(2)} cada</p>
+            {cart.length === 0 ? (
+              <div className="text-center py-8">
+                <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Carrinho vazio</p>
+                <p className="text-sm text-muted-foreground">Adicione produtos ou serviços</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {cart.map((item, index) => (
+                  <div key={`${item.id}-${item.type}-${item.barberId}-${index}`} className="p-3 border border-border rounded-lg">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{item.name}</h4>
+                          {item.type === 'service' && (
+                            <div className="mt-2">
+                              <Select 
+                                value={item.barberId || ''} 
+                                onValueChange={(value) => updateBarberForItem(item.id, item.type, value)}
+                              >
+                                <SelectTrigger className={`h-11 text-base ${!item.barberId ? 'border-red-300 bg-red-50 text-red-600' : ''}`}>
+                                  <SelectValue placeholder="Selecione barbeiro" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {barbers.map(barber => (
+                                    <SelectItem key={barber.id} value={barber.id}>
+                                      {barber.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFromCart(item.id, item.type, item.barberId)}
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateQuantity(item.id, item.type, item.barberId, item.quantity - 1)}
+                            className="h-7 w-7 p-0"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          
+                          <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateQuantity(item.id, item.type, item.barberId, item.quantity + 1)}
+                            className="h-7 w-7 p-0"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        
+                        <span className="font-semibold text-sm">Unit: R$ {(item.price).toFixed(2)}</span>
+                      </div>
                     </div>
-                    
-                    <div className="text-right sm:text-left">
-                      <p className="font-bold text-lg">R$ {(item.price * item.quantity).toFixed(2)}</p>
-                    </div>
+                  </div>
+                ))}
+                
+                <div className="border-t pt-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold">Total:</span>
+                    <span className="text-lg font-bold text-foreground">R$ {getCartTotal().toFixed(2)}</span>
                   </div>
                   
-                  {/* Controles de quantidade e remoção */}
-                  <div className="flex items-center justify-between sm:justify-end gap-2">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateQuantity(item.id, item.type, item.barberId, item.quantity - 1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateQuantity(item.id, item.type, item.barberId, item.quantity + 1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeFromCart(item.id, item.type, item.barberId)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              <div className="border-t pt-3">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                  <span className="text-xl font-bold">Total:</span>
-                  <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <span className="text-xl font-bold text-foreground">R$ {getCartTotal().toFixed(2)}</span>
-                    <Button 
-                      onClick={() => setIsCheckoutOpen(true)}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      Finalizar Venda
-                    </Button>
-                  </div>
+                  <Button 
+                    onClick={() => setIsCheckoutOpen(true)}
+                    className="w-full flex items-center justify-center gap-2"
+                    size="lg"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Finalizar Venda
+                  </Button>
                 </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
-      )}
+      </div>
 
       {/* Dialog de Checkout */}
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Finalizar Venda</DialogTitle>
-            <DialogDescription>
-              Complete os dados da venda
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent className="mx-4 sm:mx-0 max-w-md sm:max-w-lg w-full">
+        <DialogHeader>
+          <DialogTitle className="text-lg sm:text-xl">Finalizar Venda</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base">
+            Complete os dados da venda
+          </DialogDescription>
+        </DialogHeader>
           
-          <form onSubmit={handleCheckout} className="space-y-4">
+          <form onSubmit={handleCheckout} className="space-y-4 sm:space-y-6">
             <div className="space-y-2">
-              <Label>Forma de Pagamento</Label>
+              <Label className="text-sm sm:text-base">Forma de Pagamento</Label>
               <Select 
                 value={checkoutData.paymentMethod} 
                 onValueChange={(value: any) => setCheckoutData(prev => ({ ...prev, paymentMethod: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10 sm:h-11 text-sm sm:text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -497,12 +502,13 @@ export default function Sales() {
                 />
                 
                 <div className="space-y-2">
-                  <Label htmlFor="clientName">Nome do Cliente *</Label>
+                  <Label htmlFor="clientName" className="text-sm sm:text-base">Nome do Cliente *</Label>
                   <Input
                     id="clientName"
                     value={checkoutData.clientName}
                     onChange={(e) => handleNameChange(e.target.value)}
                     placeholder="Nome completo"
+                    className="h-10 sm:h-11 text-sm sm:text-base"
                     required
                   />
                 </div>
@@ -519,24 +525,25 @@ export default function Sales() {
                 />
                 
                 <div className="space-y-2">
-                  <Label htmlFor="clientNameOptional">Nome do Cliente (opcional)</Label>
+                  <Label htmlFor="clientNameOptional" className="text-sm sm:text-base">Nome do Cliente (opcional)</Label>
                   <Input
                     id="clientNameOptional"
                     value={checkoutData.clientName}
                     onChange={(e) => handleNameChange(e.target.value)}
                     placeholder="Nome completo"
+                    className="h-10 sm:h-11 text-sm sm:text-base"
                   />
                 </div>
               </>
             )}
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between items-center text-xl font-bold mb-4">
+            <div className="border-t pt-4 sm:pt-6">
+              <div className="flex justify-between items-center text-lg sm:text-xl font-bold mb-4 sm:mb-6">
                 <span>Total:</span>
                 <span className="text-foreground">R$ {getCartTotal().toFixed(2)}</span>
               </div>
               
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full h-10 sm:h-11 text-sm sm:text-base">
                 Confirmar Venda
               </Button>
             </div>

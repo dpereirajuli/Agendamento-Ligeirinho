@@ -29,7 +29,9 @@ function LayoutContent({ children }: LayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Logo" className="w-8 h-8" />
+            <div className="w-8 h-8 bg-white dark:bg-white rounded-md p-1">
+              <img src="/logo.svg" alt="Logo" className="w-full h-full" />
+            </div>
             <h1 className="text-lg font-semibold text-foreground">
               Ligeirinho
             </h1>
